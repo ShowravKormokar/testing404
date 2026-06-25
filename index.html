@@ -1,19 +1,1539 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="bn">
 
 <head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/testing404/assets/6744ffba83bf874c1073eb88_favicon-CD9UqQ9M.jpg" />
-  <link rel="preload" href="/testing404/assets/ProximaNova-Regular-BkyKiRiS.otf" as="font" type="font/otf"
-    crossorigin="anonymous">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPYLT Milk</title>
-  <script type="module" crossorigin src="/testing404/assets/index-B9NoFOIP.js"></script>
-  <link rel="stylesheet" crossorigin href="/testing404/assets/index-DIwKCTow.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authentication ও Authorization — গভীর বিশ্লেষণ রিপোর্ট</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div id="root"></div>
+
+  <!-- ============ COVER ============ -->
+  <div class="cover">
+    <div class="cover-tag">SECURITY ENGINEERING REPORT</div>
+    <div class="cover-title">Authentication ও Authorization<br>গভীর নিরাপত্তা বিশ্লেষণ</div>
+    <div class="cover-sub">
+      Session vs JWT, Pharmaciano ERP কেস-স্টাডি, রিয়েল-ওয়ার্ল্ড অ্যাটাক ভেক্টর, ইন্ডাস্ট্রি-স্ট্যান্ডার্ড
+      আর্কিটেকচার, এবং ২০২৬ সালের জন্য একটি প্র্যাক্টিকাল ডিসিশন ফ্রেমওয়ার্ক।
+    </div>
+    <div class="cover-badge-row">
+      <span class="badge">JWT SECURITY</span>
+      <span class="badge">ERP / PBAC</span>
+      <span class="badge">REFRESH TOKEN ROTATION</span>
+      <span class="badge">OWASP ASVS</span>
+      <span class="badge">COOKIE HARDENING</span>
+    </div>
+    <!-- <div class="cover-meta">
+      <span>প্রস্তুতকারক: Claude (Anthropic) — Technical Security Analysis</span>
+      <span>তারিখ: ২৫ জুন, ২০২৬</span>
+      <span>ভাষা: বাংলা (Bengali) · ফরম্যাট: Technical Report</span>
+    </div> -->
+  </div>
+
+  <!-- ============ TOC ============ -->
+  <div class="toc-page">
+    <div class="toc-title">সূচিপত্র (Table of Contents)</div>
+    <ul class="toc-list">
+      <li><span><span class="toc-num">০১.</span>ভূমিকা: Session vs Token — দ্রুত রিক্যাপ ও কেস সংযোগ</span><span
+          class="toc-page-num">৩</span></li>
+      <li><span><span class="toc-num">০২.</span>Method-01 গভীর বিশ্লেষণ: No-Refresh, No-Revocation JWT</span><span
+          class="toc-page-num">৪</span></li>
+      <li><span><span class="toc-num">০৩.</span>অ্যাটাক ভেক্টর: কীভাবে এই অথেন্টিকেশন ভাঙা/বাইপাস হয়</span><span
+          class="toc-page-num">৫</span></li>
+      <li><span><span class="toc-num">০৪.</span>কোথায় চলে, কোথায় চলে না — সিস্টেম টাইপ অনুযায়ী উপযুক্তি</span><span
+          class="toc-page-num">৭</span></li>
+      <li><span><span class="toc-num">০৫.</span>Claims বিশ্লেষণ: user_id, user_name, email, role — কতটা
+          নিরাপদ?</span><span class="toc-page-num">৮</span></li>
+      <li><span><span class="toc-num">০৬.</span>"শুধু user_id রাখলে কি ঠিক হবে?" — গভীর উত্তর</span><span
+          class="toc-page-num">৯</span></li>
+      <li><span><span class="toc-num">০৭.</span>Refresh + Revocation + Rotation কেন লাগবে — জাস্টিফিকেশন</span><span
+          class="toc-page-num">১০</span></li>
+      <li><span><span class="toc-num">০৮.</span>Pharmaciano ERP কেস-স্টাডি: রিয়েল রেসপন্স ফরেনসিক
+          অ্যানালাইসিস</span><span class="toc-page-num">১১</span></li>
+      <li><span><span class="toc-num">০৯.</span>প্রস্তাবিত আর্কিটেকচার: এই ERP-এর জন্য ইন্ডাস্ট্রি-স্ট্যান্ডার্ড
+          সমাধান</span><span class="toc-page-num">১৪</span></li>
+      <li><span><span class="toc-num">১০.</span>ফ্রন্টএন্ড সিকিউরিটি কনসার্ন — মাস্ট-হ্যাভ চেকলিস্ট</span><span
+          class="toc-page-num">১৭</span></li>
+      <li><span><span class="toc-num">১১.</span>Before vs After: পূর্ণ তুলনা (সিকিউরিটি, পারফরম্যান্স, অ্যাটাক
+          সারফেস)</span><span class="toc-page-num">১৮</span></li>
+      <li><span><span class="toc-num">১২.</span>অন্যান্য Authentication/Authorization পদ্ধতি — সিনারিও সহ</span><span
+          class="toc-page-num">১৯</span></li>
+      <li><span><span class="toc-num">১৩.</span>২০২৬+ মডার্ন ওয়েবের জন্য মাস্ট-হ্যাভ সিকিউরিটি
+          স্ট্যান্ডার্ড</span><span class="toc-page-num">২২</span></li>
+      <li><span><span class="toc-num">১৪.</span>কুকি ও হেডার সেটিংস — সম্পূর্ণ রেফারেন্স টেবিল</span><span
+          class="toc-page-num">২৩</span></li>
+      <li><span><span class="toc-num">১৫.</span>ডিজাইন-পূর্ব প্রশ্নমালা: Authentication/Authorization বাছাইয়ের
+          ফ্রেমওয়ার্ক</span><span class="toc-page-num">২৫</span></li>
+      <li><span><span class="toc-num">১৬.</span>ট্রেড-অফ ম্যাট্রিক্স: Performance vs Security vs Storage</span><span
+          class="toc-page-num">২৭</span></li>
+      <li><span><span class="toc-num">১৭.</span>সারসংক্ষেপ ও চূড়ান্ত সুপারিশ</span><span class="toc-page-num">২৯</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ============ SECTION 01 ============ -->
+  <h1><span class="section-eyebrow">Section 01 · Recap</span>ভূমিকা: Session vs Token, আর কেস-এর সাথে সংযোগ</h1>
+
+  <p>আপলোড করা নোট দুটোতে Session-based এবং Token-based (JWT) অথেন্টিকেশনের বেসিক মেকানিজম ভালোভাবেই কভার করা হয়েছে।
+    সংক্ষেপে — Session-based পদ্ধতি <strong>stateful</strong> (সার্ভার মনে রাখে), আর Token-based পদ্ধতি
+    <strong>stateless</strong> (টোকেনই তথ্য বহন করে, সার্ভার শুধু signature ভেরিফাই করে)।
+  </p>
+
+  <p>কিন্তু বাস্তব জগতে সমস্যাটা এত সহজ নয়। JWT "stateless" — এই একটা শব্দ অনেক ডেভেলপারকে ভুল পথে নিয়ে যায়: তারা
+    ভাবে stateless মানেই "revocation/refresh/rotation লাগবে না, কারণ সার্ভারকে কিছু মনে রাখতে হয় না।" এই রিপোর্টের মূল
+    প্রশ্নটাই এখানে — <strong>আপনি যে Method-01 বর্ণনা করেছেন (শুধুমাত্র একটা ২৪ ঘণ্টার JWT, কোনো
+      refresh/revocation/rotation ছাড়া) সেটা আসলে stateless সিস্টেমের একটা "naive" (সরলীকৃত) ভার্সন, এবং এই সরলীকরণের
+      একটা নির্দিষ্ট নিরাপত্তা-মূল্য (security cost) আছে।</strong></p>
+
+  <div class="box info">
+    <div class="box-title">📌 এই রিপোর্টের কাঠামো</div>
+    <p style="margin-bottom:0;">আমরা প্রথমে Method-01-কে বিচ্ছিন্নভাবে (isolation-এ) বিশ্লেষণ করব — কোন অ্যাটাকগুলো
+      সম্ভব, কোন সিস্টেমে এটা চলে। তারপর সেটাকে সরাসরি আপনার দেওয়া <strong>Pharmaciano ERP</strong> রিয়েল-ওয়ার্ল্ড
+      রেসপন্সের ওপর প্রয়োগ করে ফরেনসিক বিশ্লেষণ করব — কারণ একটা সিঙ্গেল-টেনেন্ট ব্লগের জন্য যা "যথেষ্ট নিরাপদ",
+      মাল্টি-organization, মাল্টি-branch, PBAC, Accounting ও AI-forecasting সহ একটা ERP-এর জন্য তা সম্পূর্ণ ভিন্ন রিস্ক
+      ক্যাটাগরিতে পড়ে।</p>
+  </div>
+
+  <h2>কেন এই প্রশ্নটা গুরুত্বপূর্ণ — একটা মানসিক মডেল</h2>
+  <p>JWT-কে একটা <strong>সাইন করা চেকের</strong> সাথে তুলনা করা যায়। একবার চেক সাইন হয়ে গেলে সেটা নিজেই একটা "valid
+    promise" বহন করে — প্রতিবার চেক ভাঙানোর সময় ব্যাংককে ফোন করে জিজ্ঞেস করতে হয় না "এই চেক কি এখনো valid?" — এটাই
+    stateless-এর সুবিধা। কিন্তু সমস্যা হলো — চেকটা চুরি হয়ে গেলে, বা স্বাক্ষরকারীর সিল চুরি হয়ে গেলে, বা একজন
+    কর্মচারীকে বরখাস্ত করা হলে, ব্যাংক কি সেই নির্দিষ্ট চেকটা আলাদাভাবে আটকাতে পারবে — চেক মেয়াদ শেষ হওয়ার আগেই?
+    Stateless টোকেনে উত্তরটা হলো: <strong>পারবে না, যদি না আলাদা একটা ব্ল্যাকলিস্ট/স্টেট তৈরি করা হয় — আর সেটা করলেই
+      আবার আংশিক statefulness ফিরে আসে।</strong> এই টেনশনটাই (stateless-এর performance benefit বনাম
+    instant-revocation-এর security benefit) পুরো রিপোর্টের কেন্দ্রবিন্দু।</p>
+
+  <!-- ============ SECTION 02 ============ -->
+  <h1><span class="section-eyebrow">Section 02 · Deep Dive</span>Method-01 গভীর বিশ্লেষণ: No-Refresh, No-Revocation JWT
+  </h1>
+
+  <p>আপনার বর্ণিত Method-01-টা পুনরায় স্পষ্ট করি:</p>
+  <div class="box scenario">
+    <div class="box-title">🧩 Method-01 — সংক্ষিপ্ত স্পেসিফিকেশন</div>
+    <ul style="margin-bottom:0;">
+      <li>লগইনের পর সার্ভার একটা JWT তৈরি করে, claims: <code>user_id</code>, <code>user_name</code>,
+        <code>user_email</code>, <code>user_role</code>
+      </li>
+      <li>Single token — কোনো refresh token নেই</li>
+      <li>কোনো revocation/blacklist মেকানিজম নেই</li>
+      <li>কোনো token rotation নেই</li>
+      <li>TTL (validity) = 24 ঘণ্টা</li>
+      <li>ক্লায়েন্ট টোকেন রাখে cookie বা localStorage/sessionStorage-এ</li>
+      <li>CORS policy সেট করা আছে</li>
+    </ul>
+  </div>
+
+  <h2>এটার পেছনের ধারণা ও কোথায় এটা ভেঙে যায়</h2>
+  <p>এই ডিজাইনের পেছনে যুক্তি বোধগম্য: "JWT তো signed, কেউ এডিট করতে পারবে না; CORS দিয়ে অন্য origin আটকানো হয়েছে;
+    তাহলে আর কী সমস্যা?" — সমস্যাটা হলো, <strong>JWT-র signature শুধু integrity (টোকেনটা edit হয়নি) প্রমাণ করে,
+      confidentiality বা lifecycle-control প্রমাণ করে না।</strong> একবার একটা valid টোকেন কোনোভাবে (XSS, MITM, ডিভাইস
+    চুরি, shoulder-surfing, malicious browser extension, log leakage) অন্য কারো হাতে চলে গেলে — সেই টোকেন বাকি ২৪ ঘণ্টা
+    সম্পূর্ণ legitimate ইউজার হিসেবেই কাজ করবে, কারণ সার্ভারের কাছে "এই টোকেনটা এখন আর valid না" বলার কোনো ব্যবস্থা নেই।
+  </p>
+
+  <div class="verdict-strip">
+    <div class="verdict-card r-bad">
+      <div class="v-label">Revocation</div>
+      <div class="v-value">✕ নেই</div>
+    </div>
+    <div class="verdict-card r-bad">
+      <div class="v-label">Blast Radius (leak হলে)</div>
+      <div class="v-value">২৪ ঘণ্টা</div>
+    </div>
+    <div class="verdict-card r-ok">
+      <div class="v-label">Lookup Cost</div>
+      <div class="v-value">শূন্য (fast)</div>
+    </div>
+    <div class="verdict-card r-bad">
+      <div class="v-label">Logout বাস্তবে কাজ করে?</div>
+      <div class="v-value">না (client-side only)</div>
+    </div>
+  </div>
+
+  <h3>"Logout" বাটনটা আসলে কিছুই করে না</h3>
+  <p>এই ডিজাইনে যখন ইউজার Logout ক্লিক করে, ফ্রন্টএন্ড কোড সম্ভবত শুধু cookie/localStorage থেকে টোকেন
+    <code>delete</code> করে দেয়। কিন্তু টোকেনটা নিজে এখনো সম্পূর্ণ valid — অর্থাৎ যদি কেউ logout হওয়ার আগেই টোকেনটা
+    copy করে রাখে (browser dev tools, network tab, malicious extension, proxy log), সে ইউজার logout করার পরেও সেই কপি
+    করা টোকেন দিয়ে API hit করে যেতে পারবে যতক্ষণ না ২৪ ঘণ্টা শেষ হয়। <strong>এটা একটা মৌলিক functional ও security gap
+      — "Logout" শব্দটার সাধারণ ব্যবহারকারীর প্রত্যাশার সাথে সিস্টেমের আসল আচরণ মেলে না।</strong>
+  </p>
+
+  <h2>24-ঘণ্টা TTL-এর গাণিতিক হিসাব</h2>
+  <p>একটা সংখ্যা দিয়ে বোঝা যাক — কেন "একটাই দীর্ঘ-মেয়াদী টোকেন" risk-multiplier হিসেবে কাজ করে:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>স্ক্রিনারিও</th>
+        <th>Access Token TTL = 15 মিনিট (refresh সহ)</th>
+        <th>একক JWT TTL = 24 ঘণ্টা (Method-01)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>টোকেন leak হলে গড় exposure window</td>
+        <td>≤ 15 মিনিট (worst case)</td>
+        <td>≤ 24 ঘণ্টা (worst case — ৯৬ গুণ বেশি)</td>
+      </tr>
+      <tr>
+        <td>Admin "এই ইউজারকে এখনই ব্লক করো" করলে কার্যকর হতে সময়</td>
+        <td>তাৎক্ষণিক (refresh token revoke করলেই next refresh-এ আটকে যায়, এবং access token নিজেই কয়েক মিনিটে
+          এক্সপায়ার করে)</td>
+        <td>কার্যকর <em>না</em> হতে পারে — পুরোনো access token ২৪ ঘণ্টা valid থেকেই যাবে, যদি না আলাদা blacklist থাকে
+        </td>
+      </tr>
+      <tr>
+        <td>কর্মচারী ছাঁটাই হলে অফবোর্ডিং রিস্ক</td>
+        <td>কম — refresh token সাথে সাথে revoke করা যায়</td>
+        <td>উচ্চ — ছাঁটাই হওয়া স্টাফ ২৪ ঘণ্টা পর্যন্ত সিস্টেমে অ্যাক্সেস রাখতে পারে</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box danger">
+    <div class="box-title">⚠️ মূল ঝুঁকি — সংক্ষেপে</div>
+    <p style="margin-bottom:0;">"Stateless" ডিজাইন <em>performance</em> দেয়, কিন্তু <em>control</em> ছেড়ে দেয়।
+      ২৪-ঘণ্টা একক টোকেনে আপনি কার্যত বলছেন — "যদি এই টোকেন কখনো leak হয়, আমরা পরের ২৪ ঘণ্টা সেটা নিয়ে কিছু করতে পারব
+      না।" একটা সাধারণ ব্লগ অ্যাপের জন্য এটা মেনে নেওয়া যায়; financial/inventory ডেটা সহ ERP-র জন্য এটা সম্ভবত মেনে
+      নেওয়া যায় না (Section 08-এ বিস্তারিত)।</p>
+  </div>
+
+  <!-- ============ SECTION 03 ============ -->
+  <h1><span class="section-eyebrow">Section 03 · Offense</span>অ্যাটাক ভেক্টর: কীভাবে এই অথেন্টিকেশন ভাঙা/বাইপাস হয়
+  </h1>
+
+  <p>নিচে Method-01-এর বিরুদ্ধে বাস্তব-জগতের অ্যাটাক ক্যাটাগরিগুলো সাজানো হয়েছে গুরুত্ব অনুযায়ী। প্রতিটার সাথে "কীভাবে
+    কাজ করে" এবং "কখন এটা ফেইল করায়" ব্যাখ্যা করা হয়েছে।</p>
+
+  <h2>৩.১ — XSS দিয়ে Token Theft (সবচেয়ে সাধারণ)</h2>
+  <div class="box danger">
+    <div class="box-title">🎯 Attack: Cross-Site Scripting → Token Exfiltration</div>
+    <p>যদি টোকেন <code>localStorage</code> বা <code>sessionStorage</code>-এ রাখা হয় (এবং HttpOnly cookie-তে না রাখা
+      হয়), তাহলে পেজের যেকোনো জায়গায় ইনজেক্ট হওয়া JavaScript সরাসরি <code>localStorage.getItem('token')</code> কল
+      করে টোকেন পড়ে ফেলতে পারে এবং নিজের সার্ভারে পাঠিয়ে দিতে পারে।</p>
+    <p style="margin-bottom:0;"><strong>কখন ঘটে:</strong> কোনো ইউজার-জেনারেটেড কনটেন্ট ফিল্ড (যেমন প্রোডাক্ট রিভিউ, নোট
+      ফিল্ড, ইনভয়েস মেমো) যদি sanitize না করে সরাসরি DOM-এ render করা হয় (<code>innerHTML</code>), একটা malicious
+      <code>&lt;script&gt;</code> ট্যাগ বা event handler ইনজেক্ট করে আক্রমণকারী যেকোনো ভিজিটরের টোকেন চুরি করতে পারে।
+      ERP-তে এটা ভয়াবহ — কারণ super-admin যদি একটা malicious purchase-note খোলে, তার পূর্ণ-অ্যাক্সেস টোকেন চুরি হয়ে
+      যেতে পারে।
+    </p>
+  </div>
+
+  <h2>৩.২ — Token Replay (পুনঃব্যবহার আক্রমণ)</h2>
+  <div class="box danger">
+    <div class="box-title">🎯 Attack: Captured Token Replay</div>
+    <p style="margin-bottom:0;">একবার একটা ভ্যালিড টোকেন নেটওয়ার্ক লগ, ব্রাউজার হিস্ট্রি, ব্রাউজার ডেভটুলস স্ক্রিনশট,
+      ভুলবশত পাবলিক গিটহাব রিপোতে কমিট, কিংবা CI/CD পাইপলাইন লগে (এটাই Pharmaciano কেসে ঘটেছে — Section 08 দেখুন)
+      এক্সপোজ হলে, যেকেউ সেটা যত খুশি বার <code>Authorization: Bearer &lt;token&gt;</code> হেডারে বসিয়ে রিপ্লে করতে
+      পারবে — যতক্ষণ <code>exp</code> পার না হয়। কোনো nonce, কোনো single-use মেকানিজম নেই বলে সার্ভার রিপ্লে আর
+      লেজিটিমেট রিকোয়েস্টের মধ্যে পার্থক্য করতে পারে না।</p>
+  </div>
+
+  <h2>৩.৩ — Man-in-the-Middle (MITM) / Token Interception</h2>
+  <div class="box danger">
+    <div class="box-title">🎯 Attack: Network-Level Interception</div>
+    <p style="margin-bottom:0;">পাবলিক Wi-Fi, প্রক্সি, কম্প্রোমাইজড রাউটার, বা TLS downgrade (যদি HSTS ঠিকমতো এনফোর্স না
+      হয়) — এসবের মাধ্যমে টোকেন ট্রানজিটে চুরি হতে পারে। যদি Pharmaciano-এর মতো সিস্টেম HSTS হেডার সঠিকভাবে সেট করে (যা
+      আমরা Section 08-এ দেখব এটা করেছে), MITM-এর সুযোগ অনেক কমে যায় — কিন্তু পুরোপুরি বন্ধ হয় না (যেমন প্রথম ভিজিটে
+      HSTS এখনো ব্রাউজারে cache না থাকলে)।</p>
+  </div>
+
+  <h2>৩.৪ — CSRF (যদি কুকিতে রাখা হয় ভুলভাবে)</h2>
+  <div class="box warning">
+    <div class="box-title">🎯 Attack: Cross-Site Request Forgery</div>
+    <p style="margin-bottom:0;">টোকেন যদি কুকিতে রাখা হয় এবং <code>SameSite</code> অ্যাট্রিবিউট ঠিকমতো সেট না থাকে
+      (অর্থাৎ default বা <code>None</code>), তাহলে একটা malicious ওয়েবসাইট ভিজিটরের ব্রাউজার ব্যবহার করে তার নামে
+      আনঅথরাইজড রিকোয়েস্ট পাঠাতে পারে (যেমন "একটা নতুন purchase order তৈরি করো")। ব্রাউজার স্বয়ংক্রিয়ভাবে কুকি
+      অ্যাটাচ করে পাঠিয়ে দেয়, ইউজার কিছু বোঝার আগেই।</p>
+  </div>
+
+  <h2>৩.৫ — Role/Claim Tampering Misconception</h2>
+  <div class="box info">
+    <div class="box-title">ℹ️ এটা সাধারণত সম্ভব না — কিন্তু কেন মানুষ ভুল বোঝে</div>
+    <p style="margin-bottom:0;">অনেকে ভাবে "JWT base64-encoded, তাই কেউ <code>user_role: "admin"</code> বসিয়ে দিতে
+      পারবে।" এটা ভুল ধারণা — যদি সার্ভার ঠিকভাবে signature verify করে (HS256/RS256), payload পরিবর্তন করলে signature
+      mismatch হবে এবং রিকোয়েস্ট রিজেক্ট হবে। <strong>আসল ঝুঁকি tampering-এ না, বরং "alg: none" attack বা weak-secret
+        brute-force-এ।</strong> যদি কোনো লাইব্রেরি ভুলভাবে কনফিগার করা থাকে এবং <code>alg</code> হেডার ক্লায়েন্ট থেকে
+      নির্ধারিত হতে দেয় (legacy bug), আক্রমণকারী <code>alg: none</code> পাঠিয়ে signature ভেরিফিকেশন সম্পূর্ণ বাইপাস
+      করতে পারে। আধুনিক JWT লাইব্রেরিতে এটা সাধারণত প্যাচ করা থাকে, কিন্তু পুরোনো/কাস্টম ইমপ্লিমেন্টেশনে এখনো দেখা যায়।
+    </p>
+  </div>
+
+  <h2>৩.৬ — Secret Key / Signing Key Compromise</h2>
+  <div class="box danger">
+    <div class="box-title">🎯 Attack: HS256 Secret Brute-force বা Leak</div>
+    <p style="margin-bottom:0;">HS256 (symmetric) ব্যবহার করলে সেই একই সিক্রেট কী টোকেন সাইন আর ভেরিফাই দুটোই করে। যদি
+      এই সিক্রেট দুর্বল হয় (ছোট, predictable, .env ফাইল git-এ পুশ হয়ে যায়, বা environment variable leak হয় কোনো
+      error-log/stack-trace এর মাধ্যমে), আক্রমণকারী নিজেই ইচ্ছামতো claims (যেমন <code>user_role: "super_admin"</code>)
+      দিয়ে সম্পূর্ণ নতুন, সম্পূর্ণ-ভ্যালিড টোকেন বানিয়ে ফেলতে পারে — কোনো লগইন ছাড়াই। এটা পুরো সিস্টেম টেকওভারের
+      সমান।</p>
+  </div>
+
+  <h2>৩.৭ — Long-Lived Token + Offboarding Gap</h2>
+  <div class="box warning">
+    <div class="box-title">🎯 Attack/Failure: Insider Threat after Termination</div>
+    <p style="margin-bottom:0;">একজন কর্মচারী (বা branch manager) চাকরি ছাড়ার/বরখাস্ত হওয়ার পরেও, তার আগের ইস্যু করা
+      টোকেন এক্সপায়ার না হওয়া পর্যন্ত (২৪ ঘণ্টা) পূর্ণ-অ্যাক্সেস বজায় রাখে। ERP-তে এটার অর্থ — ছাঁটাই হওয়া একাউন্টিং
+      স্টাফ এখনো invoice তৈরি করতে, ইনভেন্টরি অ্যাডজাস্ট করতে, বা ডেটা এক্সপোর্ট করতে পারবে যতক্ষণ না টোকেন আপনাআপনি
+      এক্সপায়ার করে।</p>
+  </div>
+
+  <h2>৩.৮ — Device Theft / Shared Computer</h2>
+  <div class="box warning">
+    <div class="box-title">🎯 Scenario: Shared POS Terminal</div>
+    <p style="margin-bottom:0;">ফার্মেসি/রিটেইল POS টার্মিনাল প্রায়ই শেয়ার্ড ডিভাইস হয় — একই ব্রাউজার সেশনে একাধিক
+      স্টাফ পালা করে লগইন করে। যদি একজন স্টাফ ব্রাউজার ট্যাব বন্ধ না করেই চলে যায় এবং "Logout" না করে (অথবা Logout
+      করলেও, যেমন ৩.১-এ ব্যাখ্যা করা হয়েছে, পুরোনো টোকেন এখনো valid), পরের শিফটের স্টাফ আগের ইউজারের একসেস ব্যবহার করে
+      কাজ চালিয়ে যেতে পারে — audit log-এ ভুল ইউজার রেকর্ড হবে, যা accounting/compliance-এর জন্য সমস্যাজনক।</p>
+  </div>
+
+  <!-- ============ SECTION 04 ============ -->
+  <h1><span class="section-eyebrow">Section 04 · Fit Analysis</span>কোথায় চলে, কোথায় চলে না — সিস্টেম টাইপ অনুযায়ী
+    উপযুক্তি</h1>
+
+  <p>Method-01 নিজে "খারাপ" কোড নয় — এটা একটা <strong>ট্রেড-অফ সিদ্ধান্ত</strong>, এবং সব ট্রেড-অফের মতোই এটা
+    প্রসঙ্গ-নির্ভর (context-dependent)। নিচে কোন ধরনের সিস্টেমে এটা যুক্তিসঙ্গত এবং কোথায় বিপজ্জনক, তার একটা বাস্তব
+    ম্যাপ দেওয়া হলো।</p>
+
+  <h2>৪.১ — যেখানে Method-01-এর মতো simple JWT মানিয়ে যায়</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>সিস্টেম টাইপ</th>
+        <th>কেন এটা চলে</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>পাবলিক কনটেন্ট/ব্লগ প্ল্যাটফর্ম</strong> (read-heavy, কম sensitive write)</td>
+        <td>Token leak হলে worst-case ক্ষতি সীমিত — কেউ একটা কমেন্ট পোস্ট করতে পারবে, কিন্তু financial loss নেই</td>
+      </tr>
+      <tr>
+        <td><strong>ইন্টারনাল টুল/ড্যাশবোর্ড</strong> (VPN-এর পেছনে, সীমিত ইউজার)</td>
+        <td>Network-level আরেকটা নিরাপত্তা স্তর (VPN/IP allowlist) থাকে বলে token leak-এর সুযোগ কম</td>
+      </tr>
+      <tr>
+        <td><strong>MVP / Hackathon / Proof-of-Concept</strong></td>
+        <td>Speed-to-market অগ্রাধিকার; প্রোডাকশনে যাওয়ার আগে এটা আপগ্রেড করার প্ল্যান থাকে</td>
+      </tr>
+      <tr>
+        <td><strong>Demo/Sandbox এনভায়রনমেন্ট</strong> (real data নেই)</td>
+        <td>কোনো sensitive ডেটা এক্সপোজড না হওয়ায় ঝুঁকি নগণ্য</td>
+      </tr>
+      <tr>
+        <td><strong>Server-to-server, short-lived machine token</strong> (কয়েক মিনিটের জন্য ইস্যু করা, human session
+          না)</td>
+        <td>এক্ষেত্রে TTL এমনিতেই অনেক কম রাখা হয়, তাই "একটাই টোকেন"-এর রিস্ক কম</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>৪.২ — যেখানে এটা বিপজ্জনক/অগ্রহণযোগ্য</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>সিস্টেম টাইপ</th>
+        <th>কেন এটা বিপজ্জনক</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>ব্যাংকিং / পেমেন্ট গেটওয়ে / ফিনটেক</strong></td>
+        <td>রেগুলেটরি কম্প্লায়েন্স (PCI-DSS, PSD2) সাধারণত নির্দিষ্ট সেশন টাইমআউট এবং তাৎক্ষণিক রিভোকেশন বাধ্যতামূলক
+          করে</td>
+      </tr>
+      <tr>
+        <td><strong>ERP / Accounting / Inventory System</strong> (এই কেসের মতো)</td>
+        <td>একটা leaked টোকেন দিয়ে ইনভেন্টরি অ্যাডজাস্ট, ভুয়া purchase order, বা debit-credit এন্ট্রি ম্যানিপুলেট করা
+          সম্ভব — যার আর্থিক প্রভাব সরাসরি</td>
+      </tr>
+      <tr>
+        <td><strong>হেলথকেয়ার / Patient Data System</strong></td>
+        <td>HIPAA-সদৃশ রেগুলেশনে দ্রুত access revocation একটা মৌলিক প্রয়োজনীয়তা</td>
+      </tr>
+      <tr>
+        <td><strong>Multi-tenant SaaS</strong> (একাধিক organization একই ইনফ্রায়)</td>
+        <td>একটা tenant-এর টোকেন leak হলে অন্য tenant-এর ডেটা পর্যন্ত প্রভাবিত হতে পারে যদি claim/scope যাচাই দুর্বল হয়
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Admin Panel / Super-Admin Console</strong></td>
+        <td>সর্বোচ্চ-প্রিভিলেজ অ্যাকাউন্ট compromise হলে পুরো সিস্টেম টেকওভার সম্ভব — এই অ্যাকাউন্টের জন্যই সবচেয়ে কড়া
+          revocation দরকার</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box scenario">
+    <div class="box-title">🧪 তুলনামূলক সিনারিও: একই বাগ, দুই সিস্টেম, দুই ফল</div>
+    <p><strong>সিনারিও A — পাবলিক ব্লগ:</strong> একজন আক্রমণকারী XSS দিয়ে একজন রিডারের টোকেন চুরি করল। ফলাফল:
+      আক্রমণকারী সেই ইউজারের নামে একটা কমেন্ট পোস্ট করতে পারল। ক্ষতি: বিরক্তিকর, কিন্তু লো-স্টেক।</p>
+    <p style="margin-bottom:0;"><strong>সিনারিও B — Pharmaciano-এর মতো ERP:</strong> একজন আক্রমণকারী একই কৌশলে একজন
+      Branch Manager-এর টোকেন চুরি করল। ফলাফল: আক্রমণকারী ২৪ ঘণ্টা ধরে ইনভেন্টরি অ্যাডজাস্টমেন্ট করতে পারে, ভুয়া sales
+      entry দিতে পারে, supplier payment তথ্য দেখতে পারে, এমনকি (role অনুযায়ী) ডেটা এক্সপোর্ট করতে পারে — এবং অ্যাডমিন
+      এটা টের পেলেও তাৎক্ষণিকভাবে অ্যাক্সেস বন্ধ করতে পারবে না, কারণ কোনো revocation মেকানিজম নেই।</p>
+  </div>
+
+  <!-- ============ SECTION 05 ============ -->
+  <h1><span class="section-eyebrow">Section 05 · Claims Audit</span>Claims বিশ্লেষণ: user_id, user_name, email, role —
+    কতটা নিরাপদ?</h1>
+
+  <p>আপনার প্রশ্ন ছিল: <code>user_id</code>, <code>user_name</code>, <code>user_email</code>, <code>user_role</code> —
+    এই চারটা claim JWT payload-এ রাখা কি নিরাপদ? উত্তরটা একমাত্রিক নয় — এটা নির্ভর করে <strong>"নিরাপদ" বলতে কী বোঝানো
+      হচ্ছে তার ওপর</strong>। তিনটা আলাদা কোণ থেকে দেখা যাক।</p>
+
+  <h2>৫.১ — Confidentiality কোণ থেকে: JWT এনক্রিপ্টেড না, এনকোডেড</h2>
+  <div class="box danger">
+    <div class="box-title">⚠️ মৌলিক ভুল ধারণা</div>
+    <p style="margin-bottom:0;">JWT-র payload <strong>base64url-এনকোডেড, এনক্রিপ্টেড না।</strong> যেকেউ টোকেনটা দেখলেই
+      (ব্রাউজার ডেভটুলস, নেটওয়ার্ক প্রক্সি, jwt.io-এর মতো ওয়েবসাইটে পেস্ট করে) পুরো payload প্লেইন-টেক্সট-এ পড়ে ফেলতে
+      পারে — কোনো secret key দরকার নেই decode করতে, শুধু verify করতে দরকার। অর্থাৎ <code>user_email</code> এবং
+      <code>user_name</code> টোকেনের ভেতরে থাকলে তা de facto পাবলিক — যেকোনো ব্রাউজার এক্সটেনশন, প্রক্সি লগ, বা এমনকি
+      ব্রাউজার হিস্ট্রি এক্সেস পাওয়া কেউ এটা পড়তে পারবে।
+    </p>
+  </div>
+
+  <h3>তিনটা claim-কে আলাদাভাবে রেট করা যাক</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Claim</th>
+        <th>Confidentiality Risk</th>
+        <th>মন্তব্য</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>user_id</code></td>
+        <td><span class="tag good">কম</span></td>
+        <td>একটা opaque আইডি (যেমন MongoDB ObjectId); একা এটা দিয়ে সরাসরি কোনো PII এক্সপোজ হয় না, যদি আইডিটা
+          sequential/predictable না হয়</td>
+      </tr>
+      <tr>
+        <td><code>user_name</code></td>
+        <td><span class="tag mid">মধ্যম</span></td>
+        <td>PII (ব্যক্তিগত তথ্য) — কিন্তু সাধারণত UI-তেই দেখানো হয়, তাই এক্সপোজার তেমন নতুন কিছু যোগ করে না</td>
+      </tr>
+      <tr>
+        <td><code>user_email</code></td>
+        <td><span class="tag bad">উচ্চ</span></td>
+        <td>সরাসরি PII; phishing/spam target হওয়ার সুযোগ তৈরি করে এবং অনেক রেগুলেশনে (GDPR-সদৃশ) email-কে protected
+          personal data ধরা হয়</td>
+      </tr>
+      <tr>
+        <td><code>user_role</code></td>
+        <td><span class="tag mid">মধ্যম-উচ্চ</span></td>
+        <td>সরাসরি sensitive না, কিন্তু আক্রমণকারীকে "টার্গেট রিকনেসান্স" সুবিধা দেয় — কে super_admin, কে শুধু cashier,
+          সেটা জেনে আক্রমণকারী সবচেয়ে মূল্যবান টোকেনটা খুঁজে নিতে পারে</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>৫.২ — Integrity কোণ থেকে: tampering সম্ভব না (যদি ঠিকভাবে verify হয়)</h2>
+  <p>চারটা claim-ই — যদি সার্ভার প্রতিটা রিকোয়েস্টে signature ভেরিফাই করে — ট্যাম্পার-প্রুফ। আক্রমণকারী payload এডিট
+    করে <code>user_role: "admin"</code> বসিয়ে দিলে signature mismatch হবে এবং রিকোয়েস্ট রিজেক্ট হবে (Section 3.5-এ
+    বিস্তারিত)। সুতরাং, <strong>"কেউ role পরিবর্তন করে দিতে পারবে কিনা" — এই অর্থে এই চারটা claim নিরাপদ, যতক্ষণ সাইনিং
+      key সুরক্ষিত থাকে।</strong></p>
+
+  <h2>৫.৩ — Staleness কোণ থেকে: claim আর বাস্তবতার মধ্যে ফাঁক</h2>
+  <div class="box warning">
+    <div class="box-title">⚠️ সবচেয়ে underrated সমস্যা: Stale Role Claim</div>
+    <p>ধরুন একজন cashier-কে মাঝপথে branch manager-এ promote করা হলো, বা একজন branch manager-এর role downgrade/suspend
+      করা হলো ডেটাবেসে। কিন্তু তার আগে ইস্যু করা JWT-তে এখনো পুরোনো <code>user_role: "cashier"</code> (বা পুরোনো higher
+      role) এনকোড করা আছে — এবং টোকেন valid থাকবে যতক্ষণ exp পার না হয়।</p>
+    <p style="margin-bottom:0;"><strong>ফলাফল দুই দিকেই ঝুঁকিপূর্ণ:</strong> ডিমোশন/সাসপেনশনের ক্ষেত্রে ইউজার পুরোনো
+      higher-privilege role নিয়ে কাজ চালিয়ে যেতে পারবে (security risk); প্রমোশনের ক্ষেত্রে নতুন প্রিভিলেজ অ্যাক্সেস
+      করতে গেলে আটকে যাবে যতক্ষণ না সে আবার লগইন করে (UX bug)। JWT-তে role এনকোড করার এটাই মূল মূল্য — <em>role
+        পরিবর্তনের প্রতিফলন instant হয় না।</em></p>
+  </div>
+
+  <h2>৫.৪ — সিদ্ধান্তের নিয়ম (Rule of Thumb)</h2>
+  <div class="verdict-strip">
+    <div class="verdict-card r-good">
+      <div class="v-label">রাখা নিরাপদ</div>
+      <div class="v-value">user_id</div>
+    </div>
+    <div class="verdict-card r-ok">
+      <div class="v-label">সতর্কতার সাথে রাখা যায়</div>
+      <div class="v-value">role / scope</div>
+    </div>
+    <div class="verdict-card r-bad">
+      <div class="v-label">এড়ানো ভালো</div>
+      <div class="v-value">email / name</div>
+    </div>
+  </div>
+  <p>সাধারণ নিয়ম: <strong>JWT payload-এ এমন কিছুই রাখবেন না যা (ক) সরাসরি PII, (খ) দ্রুত পরিবর্তনশীল, অথবা (গ)
+      ক্লায়েন্ট-সাইডে এমনিতেই UI থেকে পাওয়া যাবে।</strong> যেটা সত্যিকারের প্রয়োজন তা হলো একটা stable identifier
+    (user_id) যা দিয়ে প্রতিটা প্রোটেক্টেড রিকোয়েস্টে সার্ভার চাইলে fresh ডেটা lookup করতে পারে।</p>
+
+  <!-- ============ SECTION 06 ============ -->
+  <h1><span class="section-eyebrow">Section 06 · Deep Answer</span>"শুধু user_id রাখলে কি ঠিক হবে?" — গভীর উত্তর</h1>
+
+  <p><strong>সংক্ষিপ্ত উত্তর: হ্যাঁ, এটা ইন্ডাস্ট্রি-স্ট্যান্ডার্ড সর্বোত্তম প্র্যাকটিসের সবচেয়ে কাছাকাছি — কিন্তু এর
+      একটা পারফরম্যান্স মূল্য আছে, যা বুঝে নেওয়া জরুরি।</strong></p>
+
+  <h2>৬.১ — কেন শুধু user_id ভালো ধারণা</h2>
+  <div class="box safe">
+    <div class="box-title">✅ সুবিধা</div>
+    <ul style="margin-bottom:0;">
+      <li><strong>কোনো PII এক্সপোজ হয় না</strong> — টোকেন leak হলেও email/name বের হবে না</li>
+      <li><strong>Stale-data সমস্যা থাকে না</strong> — role পরিবর্তন হলে পরের রিকোয়েস্টেই তা প্রতিফলিত হয়, কারণ role
+        প্রতিবার ডেটাবেস/কেইশ থেকে fresh আনা হয়</li>
+      <li><strong>টোকেনের সাইজ ছোট থাকে</strong> — প্রতিটা রিকোয়েস্টের হেডার সাইজ কমে যায়, যা latency-তে ক্ষুদ্র
+        কিন্তু আসল উন্নতি দেয়</li>
+      <li><strong>Single source of truth বজায় থাকে</strong> — ইউজারের নাম/ইমেইল/role একটাই জায়গায় (ডেটাবেস) আছে,
+        টোকেনে একটা "দ্বিতীয় কপি" থাকছে না যা desync হয়ে যেতে পারে</li>
+    </ul>
+  </div>
+
+  <h2>৬.২ — কিন্তু তাহলে "lookup-ছাড়া stateless" সুবিধাটা কী হলো?</h2>
+  <p>এখানেই আসল প্রশ্ন — যদি প্রতিটা প্রোটেক্টেড রিকোয়েস্টে <code>user_id</code> দিয়ে role/permission lookup করতে হয়,
+    তাহলে আমরা কি Session-based পদ্ধতির মতোই একটা lookup করছি না? <strong>উত্তর: হ্যাঁ, আংশিকভাবে — কিন্তু এই lookup আর
+      session-lookup সম্পূর্ণ একই খরচের না, যদি সঠিকভাবে ডিজাইন করা হয়।</strong></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>প্যাটার্ন</th>
+        <th>প্রতি-রিকোয়েস্ট খরচ</th>
+        <th>মন্তব্য</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Pure Session lookup (DB hit)</td>
+        <td>উচ্চ — প্রতিবার DB query</td>
+        <td>Method-01 এড়াতে চাইছিল, এটাই</td>
+      </tr>
+      <tr>
+        <td>JWT-এ role এনকোডেড (Method-01 বর্ণিত)</td>
+        <td>শূন্য — শুধু signature verify</td>
+        <td>স্পিড সর্বোচ্চ, কিন্তু stale-role সমস্যা থেকে যায়</td>
+      </tr>
+      <tr>
+        <td><strong>JWT-এ user_id + role lookup Redis cache থেকে</strong></td>
+        <td>খুব কম — in-memory cache hit (সাধারণত &lt;1ms)</td>
+        <td>প্রায়-stateless পারফরম্যান্স, কিন্তু fresh role + instant-revocation সুবিধা একসাথে পাওয়া যায়</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box info">
+    <div class="box-title">💡 এটাই সবচেয়ে practical মধ্যপথ</div>
+    <p style="margin-bottom:0;">আপনার Pharmaciano-এর মতো সিস্টেমে যেহেতু <strong>Redis ক্যাশিং ইতিমধ্যে আছে</strong>
+      (আপনার N.B. অনুযায়ী), সবচেয়ে ভালো প্যাটার্ন হলো: JWT-তে শুধু <code>user_id</code> + একটা short-lived
+      role-snapshot রাখা, এবং প্রতিটা রিকোয়েস্টে middleware Redis থেকে current role/permission চেক করবে (DB hit না,
+      in-memory hit)। এতে stale-role সমস্যা সমাধান হয়, পারফরম্যান্স প্রায় stateless-এর কাছাকাছি থাকে, এবং role
+      পরিবর্তন/revocation সাথে সাথে কার্যকর হয় কারণ Redis entry আপডেট/ডিলিট করা mongo DB lookup-এর চেয়ে অনেক সস্তা।
+    </p>
+  </div>
+
+  <h2>৬.৩ — চূড়ান্ত সুপারিশ</h2>
+  <div class="qcard">
+    <span class="qnum">✓</span><span class="qtext">শুধু user_id রাখা কি ঠিক?</span>
+    <div class="qans">হ্যাঁ — কিন্তু একটা শর্তে: role/permission ভেরিফিকেশনের জন্য একটা fast lookup layer (Redis) থাকতে
+      হবে, নাহলে প্রতিটা রিকোয়েস্টে heavy DB call করতে হবে এবং Method-01-এর পুরো performance-justification হারিয়ে
+      যাবে। PBAC-সদৃশ সিস্টেমে (এই ERP-এর মতো, যেখানে role পরিবর্তন ঘটতেই পারে), <code>user_id</code>-only +
+      Redis-cached permission lookup ই সবচেয়ে ব্যালান্সড সমাধান।</div>
+  </div>
+
+  <!-- ============ SECTION 07 ============ -->
+  <h1><span class="section-eyebrow">Section 07 · Justification</span>Refresh + Revocation + Rotation কেন লাগবে —
+    জাস্টিফিকেশন</h1>
+
+  <p>আপনার প্রশ্নটা সরাসরি এবং গুরুত্বপূর্ণ: "যদি একটা JWT-ই ইউজারকে ঠিকমতো অথেন্টিকেট করতে পারে, তাহলে refresh token,
+    revocation, rotation এই জটিলতাগুলো কেন আনা হয়?" — চলুন প্রতিটাকে আলাদা করে যুক্তি দিয়ে justify করি, কারণ এই তিনটা
+    আসলে <strong>তিনটা ভিন্ন সমস্যার সমাধান করে, একটার সমাধান অন্যটা দিয়ে হয় না।</strong></p>
+
+  <h2>৭.১ — Refresh Token: কেন short-lived access token + refresh প্যাটার্ন</h2>
+  <div class="compare-cols">
+    <div class="compare-col before">
+      <h4>একটা দীর্ঘ-মেয়াদী টোকেন (Method-01)</h4>
+      <ul>
+        <li>লগইন একবারই — ভালো UX</li>
+        <li>কিন্তু ২৪ ঘণ্টা পুরো সময়ের জন্য একই টোকেন exposed থাকে</li>
+        <li>Leak হলে exposure window = পুরো বাকি সময়</li>
+      </ul>
+    </div>
+    <div class="compare-col after">
+      <h4>Short-lived Access + Refresh</h4>
+      <ul>
+        <li>Access token ১৫ মিনিটে এক্সপায়ার করে — leak হলে exposure window সর্বোচ্চ ১৫ মিনিট</li>
+        <li>Refresh token দিয়ে নিরবে নতুন access token পাওয়া যায় — ইউজার বারবার লগইন করে না (UX অক্ষুণ্ণ)</li>
+        <li>Refresh token HttpOnly cookie-তে রাখা যায়, যা JS দিয়ে পড়া যায় না (XSS-প্রতিরোধী)</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>মূল যুক্তি:</strong> এটা "best of both worlds" — UX-এ কোনো compromise (ইউজার বারবার লগইন করে না) করা ছাড়াই
+    security exposure window কে drastically কমিয়ে আনে। দুটো টোকেনের ভূমিকা আলাদা: access token হলো "এই মুহূর্তে কাজ
+    করার জন্য" (frequently exposed, short-lived), refresh token হলো "নতুন access token পাওয়ার অনুমতি" (rarely
+    transmitted, long-lived, well-protected)।</p>
+
+  <h2>৭.২ — Revocation: কেন "instant logout/block" দরকার</h2>
+  <p>একটা স্টেটলেস JWT সিস্টেমের সবচেয়ে বড় দুর্বলতা হলো এটা — <strong>"আমি এখন এই ইউজারকে ব্লক করতে চাই" — এই ইচ্ছাটা
+      JWT নিজে থেকে সম্মান করতে পারে না, কারণ টোকেন একবার ইস্যু হলে সার্ভার আর তার ওপর কোনো নিয়ন্ত্রণ রাখে না exp
+      ছাড়া।</strong> Refresh token-কে সার্ভারে track করে রাখলে (একটা ডেটাবেস টেবিল বা Redis সেটে) revocation সহজ হয়ে
+    যায়:</p>
+
+  <div class="box safe">
+    <div class="box-title">✅ Revocation যেসব বাস্তব কেসে অপরিহার্য</div>
+    <ul style="margin-bottom:0;">
+      <li>কোনো কর্মচারী হঠাৎ ছাঁটাই/বরখাস্ত হলে — "এই মুহূর্তেই" তার অ্যাক্সেস বন্ধ করা প্রয়োজন</li>
+      <li>ইউজার নিজেই রিপোর্ট করলে "আমার অ্যাকাউন্ট hack হয়েছে" — তাৎক্ষণিক সব ডিভাইস থেকে logout করানো দরকার</li>
+      <li>Suspicious activity ডিটেক্ট হলে (impossible travel, একসাথে একাধিক ভৌগোলিক লোকেশন থেকে লগইন) — automated risk
+        system-কে session kill করার ক্ষমতা থাকতে হয়</li>
+      <li>পাসওয়ার্ড পরিবর্তনের পর — পুরোনো সব সেশন invalid করা স্ট্যান্ডার্ড সিকিউরিটি প্র্যাকটিস</li>
+    </ul>
+  </div>
+
+  <h2>৭.৩ — Rotation: কেন একটা refresh token-ও forever ব্যবহার করা ঠিক না</h2>
+  <p>Refresh Token Rotation মানে — প্রতিবার refresh token ব্যবহার করে নতুন access token নেওয়ার সময়, সার্ভার একটা
+    <strong>নতুন refresh token-ও</strong> ইস্যু করে এবং পুরোনোটা invalid করে দেয়। এর পেছনের যুক্তি হলো replay-ডিটেকশন:
+  </p>
+
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: Rotation কীভাবে চুরি হওয়া refresh token ধরে ফেলে</div>
+    <div class="flow-step"><span class="flow-num">১</span><span class="flow-text">একজন legitimate ইউজার লগইন করল,
+        refresh token "R1" পেলো।</span></div>
+    <div class="flow-step"><span class="flow-num">২</span><span class="flow-text">আক্রমণকারী কোনোভাবে "R1" চুরি করল
+        (কিন্তু legitimate ইউজার এখনো এটা জানে না)।</span></div>
+    <div class="flow-step"><span class="flow-num">৩</span><span class="flow-text">আক্রমণকারী R1 ব্যবহার করে নতুন access
+        token + নতুন refresh token "R2" পেলো। সার্ভার R1-কে used/invalid মার্ক করল।</span></div>
+    <div class="flow-step"><span class="flow-num">৪</span><span class="flow-text">পরে legitimate ইউজারের অ্যাপ
+        স্বয়ংক্রিয়ভাবে R1 দিয়ে refresh করার চেষ্টা করল (যেহেতু সে জানে না R1 already ব্যবহৃত হয়েছে)।</span></div>
+    <div class="flow-step"><span class="flow-num">৫</span><span class="flow-text">সার্ভার দেখে R1 আগেই ব্যবহৃত হয়েছে
+        (already-used token re-used) — এটা <strong>reuse-detection সিগন্যাল</strong>। সার্ভার এখন পুরো token family (R1,
+        R2, এবং যা থেকেই হোক) revoke করে দিতে পারে এবং ইউজারকে আবার লগইন করতে বাধ্য করতে পারে।</span></div>
+    <div class="flow-step" style="margin-bottom:0;"><span class="flow-num">✓</span><span
+        class="flow-text"><strong>ফলাফল:</strong> চুরি যাওয়া টোকেন ব্যবহার করা মাত্রই সিস্টেম breach ডিটেক্ট করে ফেলল —
+        যা rotation ছাড়া কখনোই সম্ভব হতো না।</span></div>
+  </div>
+
+  <h2>৭.৪ — সংক্ষিপ্ত জাস্টিফিকেশন টেবিল</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>মেকানিজম</th>
+        <th>কোন সমস্যার সমাধান করে</th>
+        <th>না থাকলে কী হয়</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Short-lived Access + Refresh</td>
+        <td>Exposure window কমানো</td>
+        <td>একটা leak হলে দীর্ঘ সময় (Method-01-এ ২৪ ঘণ্টা) এক্সপোজড থাকে</td>
+      </tr>
+      <tr>
+        <td>Revocation/Blacklist</td>
+        <td>"এখনই বন্ধ করো" ক্ষমতা</td>
+        <td>Admin চাইলেও তাৎক্ষণিক অ্যাক্সেস বন্ধ করতে পারে না</td>
+      </tr>
+      <tr>
+        <td>Token Rotation</td>
+        <td>চুরি হওয়া টোকেনের silent, persistent ব্যবহার ডিটেক্ট করা</td>
+        <td>চুরি যাওয়া refresh token অনির্দিষ্টকাল ব্যবহার করে যেতে পারে, কোনো অ্যালার্ম ছাড়াই</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box danger">
+    <div class="box-title">🎯 মূল পয়েন্ট — কেন "একটাই কাজ করে" যুক্তি ভুল</div>
+    <p style="margin-bottom:0;">একটা একক JWT "অথেন্টিকেট করতে পারে" — এটা সত্য, কিন্তু authentication-এর কাজ শুধু "কে
+      এটা প্রমাণ করা" নয়; এর সাথে আসে <strong>lifecycle management</strong>-এর দায়িত্ব — সিস্টেমকে compromise, abuse,
+      বা policy পরিবর্তনের সাথে real-time-এ adapt করার ক্ষমতা দেওয়া। Method-01 প্রথম কাজটা (প্রমাণ করা) ভালোভাবে করে,
+      কিন্তু দ্বিতীয় কাজটা (নিয়ন্ত্রণ করা) সম্পূর্ণ উপেক্ষা করে। এটাই ঠিক যেখানে refresh + revocation + rotation
+      একসাথে এসে সেই ফাঁকটা পূরণ করে।</p>
+  </div>
+
+  <!-- ============ SECTION 08 ============ -->
+  <h1><span class="section-eyebrow">Section 08 · Case Study</span>Pharmaciano ERP কেস-স্টাডি: রিয়েল রেসপন্স ফরেনসিক
+    অ্যানালাইসিস</h1>
+
+  <p>আপনি যে real <code>curl</code> রিকোয়েস্ট ও রেসপন্স দিয়েছেন, তা decode করে কয়েকটা গুরুত্বপূর্ণ, বাস্তব
+    নিরাপত্তা-সংকেত পাওয়া গেছে। এগুলো শুধু theoretical না — এটা একটা লাইভ প্রোডাকশন সিস্টেমের আসল আচরণ।</p>
+
+  <h2>৮.১ — JWT Payload Decode করে যা পাওয়া গেল</h2>
+  <p class="code-label">// curl কমান্ডের Authorization হেডারের টোকেন (পুরোনো/স্টেল টোকেন) decode করে:</p>
+  <pre>{
+  "userId": "6991e81185553e712a4a0a1a",
+  "lastLogin": "2026-05-29T20:11:15.000Z",
+  "iat": 1780063875,
+  "exp": 1780668675
+}</pre>
+  <p class="code-label">// রেসপন্সে পাওয়া নতুন টোকেন decode করে:</p>
+  <pre>{
+  "userId": "6991e81185553e712a4a0a1a",
+  "lastLogin": "2026-06-25T14:56:59.000Z",
+  "iat": 1782377819,
+  "exp": 1782982619
+}</pre>
+
+  <div class="box safe">
+    <div class="box-title">✅ একটা ভালো খবর — claims minimal!</div>
+    <p style="margin-bottom:0;">প্রশ্নে যা বর্ণনা করা হয়েছিল (claims-এ user_name, user_email, user_role থাকা) — বাস্তব
+      টোকেনে তা <strong>নেই।</strong> আসল payload-এ শুধু <code>userId</code>, <code>lastLogin</code>, <code>iat</code>,
+      <code>exp</code> আছে। এটা Section 5-6 এ যা সুপারিশ করা হয়েছে তার সাথে সামঞ্জস্যপূর্ণ — Pharmaciano ইতিমধ্যে
+      claims minimal রাখার ভালো প্র্যাকটিস অনুসরণ করছে বলে মনে হচ্ছে। TTL হিসাব করলে — <code>exp - iat</code> = ৬০৪৮০০
+      সেকেন্ড = <strong>৭ দিন।</strong> এটা প্রশ্নে বর্ণিত ২৪-ঘণ্টা ধারণার চেয়েও দীর্ঘ — যা ঝুঁকি আরও বাড়িয়ে দেয়
+      (নিচে বিস্তারিত)।
+    </p>
+  </div>
+
+  <h2>৮.২ — সবচেয়ে গুরুত্বপূর্ণ আবিষ্কার: curl কমান্ডে নিজেই একটা leaked token আছে</h2>
+  <div class="box danger">
+    <div class="box-title">🚨 Critical Finding: Exposed Token in Documentation/Request Example</div>
+    <p>লক্ষ্য করুন — দেওয়া <code>curl</code> কমান্ডে <strong>লগইন রিকোয়েস্টের সাথেই একটা পুরোনো, এখনো-হয়তো-ভ্যালিড
+        JWT</strong> <code>Authorization: Bearer ...</code> হেডারে পাঠানো হয়েছে। এটা একটা লগইন এন্ডপয়েন্ট — এখানে কোনো
+      Bearer token-ই দরকার নেই, কারণ ইউজার তখনও অথেন্টিকেটেড না। এর মানে এই টোকেনটা সম্ভবত কোনো API testing টুল
+      (Postman/Swagger/Insomnia) থেকে স্বয়ংক্রিয়ভাবে কপি হয়ে গেছে — এবং এটাই হলো ঠিক Section 3.2-তে বর্ণিত
+      <strong>"Token Replay via Accidental Exposure"</strong> অ্যাটাকের একটা জীবন্ত উদাহরণ।
+    </p>
+    <p style="margin-bottom:0;"><strong>লক্ষণীয়:</strong> যদি এই টোকেনটা — যা একটা ডকুমেন্টেশন/example-এ বসে আছে — এখনো
+      এক্সপায়ার না হয়ে থাকে (৭ দিনের TTL মনে রাখুন), এবং এই ডকুমেন্ট/example কোথাও publicly শেয়ার্ড থাকে (Slack
+      চ্যানেল, পাবলিক GitHub repo, support ticket), তাহলে এটা <code>userId: 6991e81185553e712a4a0a1a</code> — সম্ভবত
+      super administrator — অ্যাকাউন্টের জন্য একটা সরাসরি, ব্যবহারযোগ্য takeover vector। এটাই একদম Section 3.2 আর 3.6-এ
+      আলোচিত theoretical ঝুঁকির বাস্তব রূপ।</p>
+  </div>
+
+  <h2>৮.৩ — Response Header বিশ্লেষণ: ভালো এবং উন্নতির জায়গা</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>হেডার</th>
+          <th>মান</th>
+          <th>মূল্যায়ন</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>strict-transport-security</code></td>
+          <td>max-age=31536000; includeSubDomains</td>
+          <td><span class="tag good">ভালো</span> — HSTS ১ বছরের জন্য এনফোর্সড, সব সাবডোমেইনে</td>
+        </tr>
+        <tr>
+          <td><code>content-security-policy</code></td>
+          <td>default-src 'self'; script-src 'self'...</td>
+          <td><span class="tag good">ভালো</span> — restrictive CSP, ইনলাইন script ব্লকড, যা XSS-এর কার্যকারিতা সীমিত করে
+          </td>
+        </tr>
+        <tr>
+          <td><code>x-content-type-options</code></td>
+          <td>nosniff</td>
+          <td><span class="tag good">ভালো</span> — MIME-sniffing অ্যাটাক প্রতিরোধ করে</td>
+        </tr>
+        <tr>
+          <td><code>x-frame-options</code></td>
+          <td>SAMEORIGIN</td>
+          <td><span class="tag good">ভালো</span> — clickjacking-এর বিরুদ্ধে সুরক্ষা</td>
+        </tr>
+        <tr>
+          <td><code>access-control-allow-origin</code></td>
+          <td>https://pharmaciano.onrender.com</td>
+          <td><span class="tag good">ভালো</span> — wildcard (<code>*</code>) না, নির্দিষ্ট origin</td>
+        </tr>
+        <tr>
+          <td><code>access-control-allow-credentials</code></td>
+          <td>true</td>
+          <td><span class="tag mid">নজরে রাখা দরকার</span> — এটা ঠিক আছে যদি ALLOW-ORIGIN wildcard না হয় (যা এখানে ঠিকই
+            আছে), কিন্তু এর মানে কুকি-ভিত্তিক অথ ব্যবহৃত হচ্ছে — তাই কুকির SameSite/HttpOnly সেটিংস অত্যন্ত গুরুত্বপূর্ণ
+            হয়ে পড়ে</td>
+        </tr>
+        <tr>
+          <td><code>set-cookie</code></td>
+          <td>(হেডারে দেখানো হয়নি)</td>
+          <td><span class="tag bad">অনিশ্চিত</span> — যদি টোকেন response body-তে JSON-এ ফেরত আসে (যা এই রেসপন্সে হয়েছে)
+            এবং ক্লায়েন্ট তা localStorage-এ রাখে, তাহলে HttpOnly cookie protection সম্পূর্ণ বাইপাস হয়ে যাচ্ছে —
+            Section 3.1-এর XSS ঝুঁকি সরাসরি প্রযোজ্য</td>
+        </tr>
+        <tr>
+          <td><code>server</code> / <code>x-render-origin-server</code></td>
+          <td>cloudflare / Render</td>
+          <td><span class="tag mid">তথ্য-উন্মোচন</span> — hosting stack প্রকাশ পাচ্ছে, যা reconnaissance-এ সামান্য
+            সাহায্য করতে পারে আক্রমণকারীকে, কিন্তু এটা সাধারণত minor risk</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warning">
+    <div class="box-title">⚠️ মূল উদ্বেগ: Token Delivery Mechanism</div>
+    <p style="margin-bottom:0;">রেসপন্স বডিতে সরাসরি <code>"token": "eyJ..."</code> JSON ফিল্ডে টোকেন ফেরত আসছে। এর মানে
+      ফ্রন্টএন্ড কোডকে এই টোকেন <strong>জাভাস্ক্রিপ্ট দিয়ে read করে কোথাও store করতে হবে</strong> — এবং সবচেয়ে
+      সম্ভাব্য জায়গা <code>localStorage</code>। যদি তা-ই হয়, তাহলে CSP থাকা সত্ত্বেও (CSP script injection ঠেকায়,
+      কিন্তু সব XSS ভেক্টর ঠেকায় না — যেমন DOM-based XSS, dependency-injected malicious script যদি 'self' থেকেই serve
+      হয়) একটা সফল XSS attack token-টা সরাসরি পড়ে ফেলতে পারবে।</p>
+  </div>
+
+  <h2>৮.৪ — Single Server + Shared MongoDB + Redis আর্কিটেকচারের প্রভাব</h2>
+  <p>আপনার বর্ণনা অনুযায়ী — <strong>একটা সার্ভার, একটা শেয়ার্ড MongoDB, এবং Redis caching ইতিমধ্যে আছে।</strong> এই
+    তথ্যটা গুরুত্বপূর্ণ কারণ এটা সরাসরি প্রভাবিত করে কোন সমাধান practically সহজ:</p>
+  <div class="box info">
+    <div class="box-title">💡 আর্কিটেকচারাল সুযোগ</div>
+    <ul style="margin-bottom:0;">
+      <li><strong>Redis আগে থেকেই আছে</strong> — তাই revocation/blacklist ইমপ্লিমেন্ট করতে নতুন কোনো ইনফ্রাস্ট্রাকচার
+        যোগ করতে হবে না, শুধু একটা নতুন key-pattern (যেমন <code>revoked_tokens:{jti}</code> বা
+        <code>user_sessions:{userId}</code>) ব্যবহার করতে হবে
+      </li>
+      <li><strong>Single server</strong> মানে horizontal-scaling জটিলতা (একাধিক সার্ভার ইনস্ট্যান্সের মধ্যে
+        session-sync) এই মুহূর্তে কোনো সমস্যা না — তাই session-based বা hybrid কোনো অ্যাপ্রোচ নেওয়াই অপারেশনালি সহজ,
+        ভবিষ্যতে স্কেল করলে Redis দিয়েই সেটা smooth হবে যেহেতু সেটআপ আগে থেকেই আছে</li>
+      <li><strong>Shared MongoDB</strong> — refresh token track করার জন্য একটা নতুন কালেকশন
+        (<code>refresh_tokens</code>) যোগ করা ন্যূনতম অতিরিক্ত খরচ</li>
+    </ul>
+  </div>
+
+  <!-- ============ SECTION 09 ============ -->
+  <h1><span class="section-eyebrow">Section 09 · Recommendation</span>প্রস্তাবিত আর্কিটেকচার: এই ERP-এর জন্য
+    ইন্ডাস্ট্রি-স্ট্যান্ডার্ড সমাধান</h1>
+
+  <h2>৯.১ — উচ্চ-স্তরের আর্কিটেকচার সিদ্ধান্ত</h2>
+  <div class="verdict-strip">
+    <div class="verdict-card r-good">
+      <div class="v-label">Access Token</div>
+      <div class="v-value">JWT, ১৫ মিনিট</div>
+    </div>
+    <div class="verdict-card r-good">
+      <div class="v-label">Refresh Token</div>
+      <div class="v-value">৭-১৪ দিন, রোটেটেড</div>
+    </div>
+    <div class="verdict-card r-good">
+      <div class="v-label">Storage</div>
+      <div class="v-value">HttpOnly Cookie</div>
+    </div>
+    <div class="verdict-card r-good">
+      <div class="v-label">Revocation</div>
+      <div class="v-value">Redis-backed</div>
+    </div>
+  </div>
+
+  <h2>৯.২ — লগইন ফ্লো (প্রস্তাবিত)</h2>
+  <div class="flow-step"><span class="flow-num">১</span><span class="flow-text">ইউজার email+password দিয়ে
+      <code>/auth/login</code>-এ POST করে। সার্ভার বিক্রুপ্ট দিয়ে পাসওয়ার্ড verify করে।</span></div>
+  <div class="flow-step"><span class="flow-num">২</span><span class="flow-text">সার্ভার একটা short-lived Access Token
+      (JWT, ১৫ মিনিট, claims: শুধু <code>user_id</code>, <code>jti</code> — token identifier) এবং একটা long-lived
+      Refresh Token (random opaque string, ৭-১৪ দিন) জেনারেট করে।</span></div>
+  <div class="flow-step"><span class="flow-num">৩</span><span class="flow-text">Refresh Token হ্যাশ করে (যেমন SHA-256)
+      MongoDB-তে একটা <code>refresh_tokens</code> কালেকশনে save হয় — সাথে <code>userId</code>, <code>deviceInfo</code>,
+      <code>issuedAt</code>, <code>expiresAt</code>, <code>familyId</code> (rotation chain ট্র্যাক করার জন্য)।</span>
+  </div>
+  <div class="flow-step"><span class="flow-num">৪</span><span class="flow-text">দুটো টোকেনই <code>HttpOnly</code>,
+      <code>Secure</code>, <code>SameSite=Strict</code> কুকিতে সেট করে পাঠানো হয় — response body-তে raw টোকেন ফেরত আসে
+      না (যা Pharmaciano-এর বর্তমান প্যাটার্ন থেকে একটা গুরুত্বপূর্ণ পরিবর্তন)।</span></div>
+  <div class="flow-step" style="margin-bottom:0;"><span class="flow-num">৫</span><span class="flow-text">প্রতিটা
+      প্রোটেক্টেড রিকোয়েস্টে মিডলওয়্যার প্রথমে JWT signature + exp চেক করে, তারপর Redis-এ <code>jti</code>
+      ব্ল্যাকলিস্টে আছে কিনা চেক করে (O(1) lookup), তারপর Redis থেকে current role/permission নিয়ে আসে (cache miss হলেই
+      DB hit)।</span></div>
+
+  <h2>৯.৩ — Refresh ফ্লো (Rotation সহ)</h2>
+  <div class="flow-step"><span class="flow-num">১</span><span class="flow-text">Access Token এক্সপায়ার হলে ক্লায়েন্ট
+      স্বয়ংক্রিয়ভাবে (axios interceptor/fetch wrapper দিয়ে) <code>/auth/refresh</code> কল করে — refresh token কুকি
+      থেকে স্বয়ংক্রিয়ভাবে পাঠানো হয়।</span></div>
+  <div class="flow-step"><span class="flow-num">২</span><span class="flow-text">সার্ভার refresh token হ্যাশ করে DB-তে
+      মিলিয়ে দেখে valid এবং unused কিনা।</span></div>
+  <div class="flow-step"><span class="flow-num">৩</span><span class="flow-text">Valid হলে: নতুন access token + নতুন
+      refresh token ইস্যু করে, পুরোনো refresh token-কে DB-তে "used" মার্ক করে (delete না করে — reuse detection-এর জন্য
+      রেকর্ড রাখা ভালো)।</span></div>
+  <div class="flow-step" style="margin-bottom:0;"><span class="flow-num">⚠</span><span
+      class="flow-text"><strong>Already-used token পাঠানো হলে:</strong> সার্ভার পুরো token family
+      (<code>familyId</code>) instantly revoke করে দেয় এবং ইউজারকে re-authenticate করতে বাধ্য করে — এটা breach
+      signal।</span></div>
+
+  <h2>৯.৪ — Logout ও Revocation ফ্লো</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>অপারেশন</th>
+        <th>কী ঘটে</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>স্বাভাবিক Logout</td>
+        <td>Refresh token DB থেকে delete; access token-এর <code>jti</code> Redis ব্ল্যাকলিস্টে অ্যাড (TTL = বাকি access
+          token lifetime)</td>
+      </tr>
+      <tr>
+        <td>"সব ডিভাইস থেকে Logout"</td>
+        <td>সেই <code>userId</code>-এর সব refresh token DB থেকে delete + একটা <code>tokenInvalidAfter: now()</code>
+          timestamp ইউজার রেকর্ডে সেট, middleware প্রতিটা JWT-র <code>iat</code> এই timestamp-এর সাথে তুলনা করে</td>
+      </tr>
+      <tr>
+        <td>Admin কর্তৃক User Suspend</td>
+        <td>ইউজার ডকুমেন্টে <code>status: suspended</code> সেট + সেই ইউজারের সব refresh token revoke + active access
+          token-গুলো পরের permission-lookup-এ Redis cache miss করিয়ে ব্লক (cache-invalidate করে দিলে)</td>
+      </tr>
+      <tr>
+        <td>Password পরিবর্তন</td>
+        <td>স্বয়ংক্রিয়ভাবে সব refresh token revoke (security best practice — নতুন পাসওয়ার্ড সেট করার পর পুরোনো সব
+          সেশন অবৈধ হওয়া উচিত)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>৯.৫ — কেন এটা পারফরম্যান্সেও ভালো (শুধু সিকিউরিটি নয়)</h2>
+  <div class="box safe">
+    <div class="box-title">✅ Performance Justification</div>
+    <p style="margin-bottom:0;">আশঙ্কা হতে পারে — "প্রতিটা রিকোয়েস্টে Redis lookup মানে তো অতিরিক্ত latency।" বাস্তবে
+      Redis in-memory lookup সাধারণত <strong>সাব-মিলিসেকেন্ড</strong> (০.১-১ms), যা MongoDB-তে ডিস্ক-ভিত্তিক query-র
+      (কয়েক ms থেকে শুরু করে, ইনডেক্স miss হলে অনেক বেশি) তুলনায় নগণ্য। যেহেতু Redis ইতিমধ্যে Pharmaciano-এর স্ট্যাকে
+      আছে, এই hybrid প্যাটার্ন কোনো নতুন অপারেশনাল জটিলতা যোগ করে না — শুধু বিদ্যমান ইনফ্রাস্ট্রাকচার আরও কার্যকরভাবে
+      ব্যবহার করে।</p>
+  </div>
+
+  <!-- ============ SECTION 10 ============ -->
+  <h1><span class="section-eyebrow">Section 10 · Frontend</span>ফ্রন্টএন্ড সিকিউরিটি কনসার্ন — মাস্ট-হ্যাভ চেকলিস্ট</h1>
+
+  <p>Backend-এর আর্কিটেকচার যত ভালোই হোক, ফ্রন্টএন্ডে ভুল হ্যান্ডলিংয়ে পুরো সিকিউরিটি মডেল ভেঙে যেতে পারে। নিচে
+    priority অনুযায়ী সাজানো ফ্রন্টএন্ড-সংক্রান্ত মাস্ট-কনসার্ন তালিকা।</p>
+
+  <h2>১০.১ — টোকেন স্টোরেজ: localStorage এড়িয়ে চলুন</h2>
+  <div class="box danger">
+    <div class="box-title">🚫 কখনোই করবেন না</div>
+    <p style="margin-bottom:0;"><code>localStorage.setItem('token', ...)</code> বা <code>sessionStorage</code>-এ
+      access/refresh token রাখা — এই দুটোই জাভাস্ক্রিপ্ট দিয়ে readable, তাই যেকোনো XSS vulnerability (এমনকি একটা npm
+      dependency-র মধ্যে hidden malicious code থেকেও) টোকেন সরাসরি চুরি করে নিতে পারে।</p>
+  </div>
+  <div class="box safe">
+    <div class="box-title">✅ পরিবর্তে যা করবেন</div>
+    <p style="margin-bottom:0;">টোকেন <code>HttpOnly</code> কুকিতে রাখুন (যা JavaScript দিয়ে পড়া যায় না), এবং
+      সার্ভার-সাইডে সেট করুন। ফ্রন্টএন্ড কোডের তখন টোকেন নিয়ে সরাসরি কিছু করার দরকার নেই — ব্রাউজার স্বয়ংক্রিয়ভাবে
+      প্রতিটা রিকোয়েস্টে কুকি অ্যাটাচ করবে।</p>
+  </div>
+
+  <h2>১০.২ — XSS প্রতিরোধ: input sanitization</h2>
+  <ul>
+    <li>কখনো <code>dangerouslySetInnerHTML</code> (React) বা <code>innerHTML</code> (vanilla JS) ব্যবহার করে
+      ইউজার-জেনারেটেড কনটেন্ট সরাসরি render করবেন না — DOMPurify-এর মতো লাইব্রেরি দিয়ে sanitize করুন</li>
+    <li>সব ফর্ম ইনপুট (purchase note, customer remark, product description) escape/sanitize করে রাখুন, বিশেষ করে যেগুলো
+      অ্যাডমিন/ম্যানেজার পরে দেখবে</li>
+    <li>Third-party npm package নিয়মিত audit করুন (<code>npm audit</code>) — supply-chain attack একটা বাস্তব ঝুঁকি</li>
+  </ul>
+
+  <h2>১০.৩ — CSRF প্রতিরোধ</h2>
+  <p>যেহেতু আমরা কুকি-ভিত্তিক টোকেন স্টোরেজ সুপারিশ করছি, CSRF protection অপরিহার্য — কুকি স্বয়ংক্রিয়ভাবে ব্রাউজার
+    পাঠিয়ে দেয়, তাই <code>SameSite=Strict</code> (বা ন্যূনতম <code>Lax</code>) + একটা CSRF টোকেন (double-submit cookie
+    প্যাটার্ন বা synchronizer token) state-changing রিকোয়েস্টে (POST/PUT/DELETE) ব্যবহার করুন।</p>
+
+  <h2>১০.৪ — সংবেদনশীল ডেটা ক্লায়েন্ট-সাইডে কনসোল/স্টেটে না রাখা</h2>
+  <ul>
+    <li>রিডাক্স/কনটেক্সট স্টেটে পূর্ণ ইউজার অবজেক্ট (পাসওয়ার্ড হ্যাশ, ইন্টারনাল আইডি, ফিনান্সিয়াল ডেটা)
+      আনপ্রয়োজনীয়ভাবে রাখবেন না</li>
+    <li>প্রোডাকশন বিল্ডে <code>console.log</code> দিয়ে টোকেন/সেনসিটিভ ডেটা প্রিন্ট করা থেকে বিরত থাকুন (সহজে ভুলে
+      যাওয়া কিন্তু gravely risky)</li>
+    <li>Browser DevTools-এ Network tab-এ সবসময় request/response visible থাকে — তাই এটা ধরে নিতে হবে যে কোনো
+      লোকাল-ম্যাশিন অ্যাক্সেসকারী ব্যক্তি (shared POS টার্মিনাল!) এই ডেটা দেখতে পারবে</li>
+  </ul>
+
+  <h2>১০.৫ — Token Expiry গ্রেসফুলি হ্যান্ডল করা</h2>
+  <p>Axios/fetch interceptor ব্যবহার করে ৪০১ রেসপন্সে স্বয়ংক্রিয়ভাবে refresh চেষ্টা করুন, ব্যর্থ হলে gracefully login
+    পেজে রিডাইরেক্ট করুন — ইউজারকে কোনো cryptic error দেখানো উচিত না (যেমন raw JSON error বা stack trace, যা প্রোডাকশন
+    সিস্টেমে ইনফরমেশন-লিকেজ ঝুঁকি তৈরি করে)।</p>
+
+  <h2>১০.৬ — Multi-tab / Multi-device সিঙ্ক্রোনাইজেশন</h2>
+  <div class="box warning">
+    <div class="box-title">⚠️ ERP-স্পেসিফিক কনসার্ন: Shared POS Terminal</div>
+    <p style="margin-bottom:0;">যেহেতু এই ERP-তে POS টার্মিনাল শেয়ার্ড ডিভাইস হতে পারে (Section 3.8), ফ্রন্টএন্ডে একটা
+      স্পষ্ট, প্রমিনেন্ট "Switch User" / "Lock Screen" ফিচার রাখা উচিত — যাতে শিফট পরিবর্তনের সময় স্টাফরা পুরো ব্রাউজার
+      বন্ধ না করেও নিরাপদে session পরিবর্তন করতে পারে। সাথে, ইনঅ্যাক্টিভিটি-ভিত্তিক auto-logout (যেমন ৫-১০ মিনিট
+      নিষ্ক্রিয়তার পর) POS টার্মিনালের জন্য একটা ভালো অতিরিক্ত সুরক্ষা স্তর।</p>
+  </div>
+
+  <h2>১০.৭ — দ্রুত রেফারেন্স চেকলিস্ট</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>আইটেম</th>
+        <th>স্ট্যাটাস হওয়া উচিত</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Token storage</td>
+        <td><span class="tag good">HttpOnly Cookie</span> — localStorage না</td>
+      </tr>
+      <tr>
+        <td>User input rendering</td>
+        <td><span class="tag good">Sanitized (DOMPurify)</span></td>
+      </tr>
+      <tr>
+        <td>State-changing requests</td>
+        <td><span class="tag good">CSRF token + SameSite</span></td>
+      </tr>
+      <tr>
+        <td>Console logging</td>
+        <td><span class="tag good">প্রোডাকশনে disabled</span></td>
+      </tr>
+      <tr>
+        <td>৪০১ হ্যান্ডলিং</td>
+        <td><span class="tag good">Auto-refresh interceptor</span></td>
+      </tr>
+      <tr>
+        <td>Shared device protection</td>
+        <td><span class="tag good">Auto-lock + Quick switch user</span></td>
+      </tr>
+      <tr>
+        <td>Dependency audit</td>
+        <td><span class="tag good">নিয়মিত npm audit / Snyk</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ============ SECTION 11 ============ -->
+  <h1><span class="section-eyebrow">Section 11 · Comparison</span>Before vs After: পূর্ণ তুলনা</h1>
+
+  <p>নিচে Method-01 (Before — Pharmaciano-এর বর্তমান বাস্তবায়ন) এবং Section 9-এ প্রস্তাবিত আর্কিটেকচার (After) এর
+    পাশাপাশি তুলনা — সিকিউরিটি, পারফরম্যান্স, এবং অ্যাটাক-সারফেস তিনটা মাত্রায়।</p>
+
+  <div class="compare-cols">
+    <div class="compare-col before">
+      <h4>🔴 Before — Method-01 (Pharmaciano বর্তমান)</h4>
+      <ul>
+        <li>একক JWT, ৭ দিনের TTL (decode করে পাওয়া আসল মান)</li>
+        <li>কোনো revocation মেকানিজম নেই</li>
+        <li>কোনো rotation নেই</li>
+        <li>Token response body-তে JSON-এ ফেরত — সম্ভবত localStorage-এ স্টোরড</li>
+        <li>Logout = client-side token delete only (টোকেন এখনো সার্ভার-সাইডে valid)</li>
+        <li>ছাঁটাই/সাসপেনশন হলে অ্যাক্সেস বন্ধ হতে সময় = বাকি TTL পর্যন্ত</li>
+      </ul>
+    </div>
+    <div class="compare-col after">
+      <h4>🟢 After — প্রস্তাবিত আর্কিটেকচার</h4>
+      <ul>
+        <li>Access JWT ১৫ মিনিট + Refresh Token ৭-১৪ দিন (রোটেটেড)</li>
+        <li>Redis-backed instant blacklist/revocation</li>
+        <li>Refresh token rotation + reuse detection</li>
+        <li>HttpOnly, Secure, SameSite কুকিতে — JS দিয়ে অপাঠ্য</li>
+        <li>Logout = সার্ভার-সাইড token invalidate, তাৎক্ষণিক কার্যকর</li>
+        <li>ছাঁটাই/সাসপেনশন হলে অ্যাক্সেস বন্ধ হতে সময় = তাৎক্ষণিক (সেকেন্ডের মধ্যে)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>১১.১ — সিকিউরিটি তুলনা</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>অ্যাটাক ভেক্টর</th>
+        <th>Before — ঝুঁকি স্তর</th>
+        <th>After — ঝুঁকি স্তর</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>XSS দিয়ে Token Theft</td>
+        <td><span class="tag bad">উচ্চ</span> (যদি localStorage-এ থাকে)</td>
+        <td><span class="tag good">কম</span> (HttpOnly cookie পড়া যায় না)</td>
+      </tr>
+      <tr>
+        <td>Token Replay (leaked/logged token)</td>
+        <td><span class="tag bad">উচ্চ</span> (৭ দিন exposure window)</td>
+        <td><span class="tag good">কম</span> (১৫ মিনিট window + revoke সম্ভব)</td>
+      </tr>
+      <tr>
+        <td>Insider/ছাঁটাই-পরবর্তী অ্যাক্সেস</td>
+        <td><span class="tag bad">উচ্চ</span> (revoke অসম্ভব)</td>
+        <td><span class="tag good">নগণ্য</span> (instant revoke)</td>
+      </tr>
+      <tr>
+        <td>CSRF</td>
+        <td><span class="tag mid">নির্ভরশীল</span> (cookie ব্যবহৃত হলে SameSite ক্রিটিক্যাল)</td>
+        <td><span class="tag good">কম</span> (SameSite=Strict + CSRF token)</td>
+      </tr>
+      <tr>
+        <td>চুরি হওয়া refresh token-এর persistent ব্যবহার</td>
+        <td class="center">প্রযোজ্য নয় (refresh token নেই)</td>
+        <td><span class="tag good">ডিটেক্টেবল</span> (rotation reuse-detection)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>১১.২ — পারফরম্যান্স তুলনা</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>মেট্রিক</th>
+        <th>Before</th>
+        <th>After</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>প্রতি-রিকোয়েস্ট ভেরিফিকেশন খরচ</td>
+        <td>শূন্য lookup (pure signature check)</td>
+        <td>+Redis lookup (~০.১-১ms) — নগণ্য বৃদ্ধি</td>
+      </tr>
+      <tr>
+        <td>লগইন ফ্রিকোয়েন্সি (ইউজার-অভিজ্ঞতা)</td>
+        <td>৭ দিনে একবার</td>
+        <td>সিলেন্ট refresh — ইউজার কার্যত একবারই লগইন করে (UX অপরিবর্তিত)</td>
+      </tr>
+      <tr>
+        <td>Token সাইজ (নেটওয়ার্ক ওভারহেড)</td>
+        <td>ছোট (minimal claims)</td>
+        <td>একই রকম ছোট, পরিবর্তন নগণ্য</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>১১.৩ — অ্যাটাক সারফেস সারসংক্ষেপ</h2>
+  <div class="box info">
+    <div class="box-title">📊 নেট ফলাফল</div>
+    <p style="margin-bottom:0;">"After" আর্কিটেকচার পারফরম্যান্সে ব্যবহারিকভাবে অপরিবর্তিত থাকে (Redis lookup-এর খরচ এত
+      কম যে ইউজার-অভিজ্ঞতায় কোনো পার্থক্য অনুভূত হবে না), কিন্তু সিকিউরিটি ঝুঁকি প্রতিটা মাত্রায় significantly কমে
+      যায় — বিশেষ করে instant-revocation ক্ষমতা, যা একটা মাল্টি-organization, মাল্টি-branch ERP-তে অপারেশনাল
+      প্রয়োজনীয়তা (যেমন দ্রুত staff offboarding) হিসেবেই গণ্য হওয়া উচিত, নিরাপত্তা-বিলাসিতা না।</p>
+  </div>
+
+  <!-- ============ SECTION 12 ============ -->
+  <h1><span class="section-eyebrow">Section 12 · Broader Landscape</span>অন্যান্য Authentication/Authorization পদ্ধতি —
+    সিনারিও সহ</h1>
+
+  <p>Session আর JWT-র বাইরেও আধুনিক সিস্টেমে আরও কিছু গুরুত্বপূর্ণ অথেন্টিকেশন/অথোরাইজেশন পদ্ধতি ব্যবহৃত হয়। প্রতিটার
+    উপযুক্ত প্রসঙ্গ, কারণ এবং একটা সিনারিও দেওয়া হলো।</p>
+
+  <h2>১২.১ — OAuth 2.0 / OpenID Connect (সোশ্যাল লগইন)</h2>
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: "Login with Google" বাটন</div>
+    <p style="margin-bottom:0;"><strong>কী:</strong> ইউজার আপনার অ্যাপের পাসওয়ার্ড তৈরি না করে, Google/Facebook-এর
+      মাধ্যমে অথেন্টিকেট হয়। আপনার সার্ভার Google-কে বিশ্বাস করে identity verification-এর জন্য।
+      <strong>কেন/কখন:</strong> ইউজার অনবোর্ডিং ফ্রিকশন কমাতে, পাসওয়ার্ড ম্যানেজমেন্টের দায়িত্ব এড়াতে (Google-ই 2FA,
+      breach-detection handle করে)। <strong>ERP প্রসঙ্গে:</strong> যদি Pharmaciano-এর ক্লায়েন্ট organization-গুলো
+      Google Workspace ব্যবহার করে, SSO (Single Sign-On) দিয়ে staff onboarding/offboarding-কে organization-এর নিজের
+      identity provider-এর সাথে সিঙ্ক করা যায় — কেউ চাকরি ছাড়লে Google Workspace থেকে রিমুভ করলেই ERP অ্যাক্সেসও বন্ধ
+      হয়ে যায়।
+    </p>
+  </div>
+
+  <h2>১২.২ — API Key Authentication</h2>
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: তৃতীয়-পক্ষ ইন্টিগ্রেশন</div>
+    <p style="margin-bottom:0;"><strong>কী:</strong> একটা দীর্ঘ-মেয়াদী, র‍্যান্ডম স্ট্রিং যা রিকোয়েস্ট হেডারে পাঠানো
+      হয়, সাধারণত human session না, বরং machine-to-machine যোগাযোগের জন্য। <strong>কখন:</strong> Pharmaciano-এর
+      AI-forecasting মডিউল যদি একটা এক্সটার্নাল ডেটা-প্রোভাইডার (যেমন supplier price feed API) থেকে ডেটা টানে, বা যদি
+      Pharmaciano নিজেই একটা পাবলিক API অফার করে accounting software ইন্টিগ্রেশনের জন্য (Tally, QuickBooks-সদৃশ)।
+      <strong>সিকিউরিটি নোট:</strong> API key-কে rate-limit এবং scope-restrict করা জরুরি — একটা leaked key দিয়ে
+      সর্বোচ্চ কতটা ক্ষতি হতে পারে তা সীমিত রাখতে হয়।
+    </p>
+  </div>
+
+  <h2>১২.৩ — Multi-Factor Authentication (MFA/2FA)</h2>
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: Super-Admin লগইনে বাধ্যতামূলক OTP</div>
+    <p style="margin-bottom:0;"><strong>কী:</strong> পাসওয়ার্ডের পাশাপাশি একটা দ্বিতীয় ফ্যাক্টর (SMS OTP, TOTP অ্যাপ
+      যেমন Google Authenticator, বা hardware key) যাচাই করা। <strong>কেন:</strong> পাসওয়ার্ড একা compromise হলেও
+      (phishing, credential-stuffing) আক্রমণকারী দ্বিতীয় ফ্যাক্টর ছাড়া লগইন করতে পারবে না। <strong>ERP প্রসঙ্গে
+        অপরিহার্য কোথায়:</strong> Super-admin এবং financial-approval-ক্ষমতাসম্পন্ন role-গুলোর জন্য MFA বাধ্যতামূলক করা
+      উচিত — কারণ এই অ্যাকাউন্টগুলোর compromise সবচেয়ে বেশি আর্থিক ক্ষতির কারণ হতে পারে।</p>
+  </div>
+
+  <h2>১২.৪ — RBAC (Role-Based Access Control)</h2>
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: "Cashier", "Branch Manager", "Accountant", "Super Admin"</div>
+    <p style="margin-bottom:0;"><strong>কী:</strong> ইউজারকে একটা ফিক্সড role দেওয়া হয়, এবং প্রতিটা role-এর সাথে
+      নির্দিষ্ট permission-সেট বাঁধা থাকে। <strong>সীমাবদ্ধতা:</strong> RBAC দ্রুত জটিল হয়ে পড়ে যখন একই role-এর মধ্যেও
+      সূক্ষ্ম পার্থক্য দরকার হয় (যেমন "এই branch manager শুধু তার নিজের branch-এর ডেটা দেখতে পারবে, অন্য branch-এর
+      না")।</p>
+  </div>
+
+  <h2>১২.৫ — PBAC / ABAC (Policy/Attribute-Based Access Control)</h2>
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: ঠিক Pharmaciano-এর প্রয়োজন</div>
+    <p style="margin-bottom:0;"><strong>কী:</strong> পারমিশন নির্ধারিত হয় শুধু role দিয়ে না, বরং একসেট attribute দিয়ে
+      — ইউজারের organization, branch, department, এমনকি সময় (যেমন "শুধু business hours-এ access")। <strong>কেন
+        Pharmaciano-এর জন্য এটাই দরকার:</strong> আপনার বর্ণনা অনুযায়ী মাল্টি-organization, মাল্টি-branch সিস্টেম — একই
+      "Branch Manager" role থাকা দুইজন ভিন্ন organization-এর ইউজারের একে অপরের ডেটা দেখার অধিকার থাকা উচিত না। এটা শুধু
+      role দিয়ে এক্সপ্রেস করা কঠিন, কিন্তু পলিসি হিসেবে সহজ:
+      <code>permission = (role == 'branch_manager') AND (resource.branchId == user.branchId) AND (resource.orgId == user.orgId)</code>।
+      এই পলিসি evaluation middleware-এ implement করতে হবে, এবং JWT-তে <code>orgId</code> ও <code>branchId</code> claim
+      রাখা (user_id-এর পাশাপাশি, সতর্কতার সাথে non-PII হওয়ায়) practically সহায়ক হতে পারে।
+    </p>
+  </div>
+
+  <h2>১২.৬ — Passwordless / Magic Link / WebAuthn (Passkeys)</h2>
+  <div class="box scenario">
+    <div class="box-title">🧪 সিনারিও: ভবিষ্যৎ-প্রস্তুত অথেন্টিকেশন</div>
+    <p style="margin-bottom:0;"><strong>কী:</strong> পাসওয়ার্ড সম্পূর্ণ বাদ দিয়ে, একটা ইমেইল লিংক (magic link) বা
+      ডিভাইস-বাউন্ড ক্রিপ্টোগ্রাফিক কী (WebAuthn/Passkey, যা biometric দিয়ে আনলক হয়) দিয়ে অথেন্টিকেট করা। <strong>কেন
+        গুরুত্বপূর্ণ হয়ে উঠছে:</strong> পাসওয়ার্ড reuse এবং phishing — দুটোই সম্পূর্ণ অপ্রাসঙ্গিক হয়ে যায়, কারণ চুরি
+      করার মতো কোনো "secret" ইউজারের মাথায় থাকে না। ২০২৬ সালে Apple, Google, Microsoft সবাই Passkey-কে primary
+      authentication method হিসেবে push করছে।</p>
+  </div>
+
+  <h2>১২.৭ — সারসংক্ষেপ টেবিল</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>পদ্ধতি</th>
+        <th>মূল ব্যবহার</th>
+        <th>Pharmaciano-এর জন্য প্রাসঙ্গিকতা</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>OAuth2/SSO</td>
+        <td>থার্ড-পার্টি/এন্টারপ্রাইজ আইডেন্টিটি</td>
+        <td>ভবিষ্যতে Organization-level SSO ইন্টিগ্রেশনের জন্য বিবেচনাযোগ্য</td>
+      </tr>
+      <tr>
+        <td>API Key</td>
+        <td>Machine-to-machine</td>
+        <td>AI-forecasting external feed, একাউন্টিং সফটওয়্যার ইন্টিগ্রেশন</td>
+      </tr>
+      <tr>
+        <td>MFA</td>
+        <td>উচ্চ-প্রিভিলেজ অ্যাকাউন্ট সুরক্ষা</td>
+        <td><strong>অবিলম্বে প্রয়োজন</strong> — super-admin ও financial-approver role</td>
+      </tr>
+      <tr>
+        <td>RBAC</td>
+        <td>সাধারণ role-ভিত্তিক অনুমতি</td>
+        <td>বেস লেয়ার হিসেবে থাকতে পারে</td>
+      </tr>
+      <tr>
+        <td>PBAC/ABAC</td>
+        <td>সূক্ষ্ম, প্রসঙ্গ-নির্ভর অনুমতি</td>
+        <td><strong>মূল প্রয়োজন</strong> — multi-org, multi-branch isolation-এর জন্য অপরিহার্য</td>
+      </tr>
+      <tr>
+        <td>Passwordless/WebAuthn</td>
+        <td>Phishing-প্রতিরোধী লগইন</td>
+        <td>মধ্য-মেয়াদী রোডম্যাপ আইটেম হিসেবে বিবেচনাযোগ্য</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ============ SECTION 13 ============ -->
+  <h1><span class="section-eyebrow">Section 13 · 2026 Standards</span>২০২৬+ মডার্ন ওয়েবের জন্য মাস্ট-হ্যাভ সিকিউরিটি
+    স্ট্যান্ডার্ড</h1>
+
+  <p>AI-এর যুগে আক্রমণও দ্রুততর এবং স্বয়ংক্রিয় হয়ে উঠেছে (automated credential-stuffing bots, AI-generated phishing,
+    LLM-assisted vulnerability scanning)। নিচে ২০২৬ সালের প্রেক্ষাপটে একটা আধুনিক সিস্টেমে যা থাকা প্রায়-বাধ্যতামূলক
+    বলে গণ্য করা উচিত।</p>
+
+  <h2>১৩.১ — অথেন্টিকেশন স্তর</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>স্ট্যান্ডার্ড</th>
+        <th>কেন প্রয়োজনীয়</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Short-lived Access Token + Rotated Refresh Token</td>
+        <td>আগে বিস্তারিত আলোচিত — exposure window সীমিত করা</td>
+      </tr>
+      <tr>
+        <td>MFA (অন্তত উচ্চ-প্রিভিলেজ রোলে বাধ্যতামূলক)</td>
+        <td>Credential-stuffing/phishing আক্রমণের বিরুদ্ধে দ্বিতীয় স্তর</td>
+      </tr>
+      <tr>
+        <td>Rate Limiting + Account Lockout (login endpoint)</td>
+        <td>Brute-force/credential-stuffing বট প্রতিরোধ — এখন AI দিয়ে এই আক্রমণ আরও স্কেলেবল</td>
+      </tr>
+      <tr>
+        <td>Bot Detection (CAPTCHA বা behavioral analysis)</td>
+        <td>স্বয়ংক্রিয় স্ক্রিপ্টেড আক্রমণ ফিল্টার করা</td>
+      </tr>
+      <tr>
+        <td>Passwordless/Passkey সাপোর্ট (অন্তত optional)</td>
+        <td>Phishing-resistant; ইন্ডাস্ট্রি ধীরে ধীরে এই দিকে সরে যাচ্ছে</td>
+      </tr>
+      <tr>
+        <td>Anomaly/Impossible-travel ডিটেকশন</td>
+        <td>একই অ্যাকাউন্ট থেকে অসম্ভব ভৌগোলিক দূরত্বে একসাথে লগইন ধরা</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>১৩.২ — অথোরাইজেশন স্তর</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>স্ট্যান্ডার্ড</th>
+        <th>কেন প্রয়োজনীয়</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Least Privilege by Default</td>
+        <td>নতুন ইউজার/role ডিফল্টভাবে সর্বনিম্ন অ্যাক্সেস পাবে, প্রয়োজনে এক্সপ্লিসিটলি বাড়ানো হবে</td>
+      </tr>
+      <tr>
+        <td>Server-side Permission Re-verification</td>
+        <td>ক্লায়েন্ট UI hide করলেও সার্ভার সবসময় আলাদাভাবে permission চেক করবে — "frontend hides button" কখনো
+          security control না</td>
+      </tr>
+      <tr>
+        <td>Audit Logging (immutable)</td>
+        <td>কে কখন কী করেছে তার পরিবর্তনহীন রেকর্ড — কম্প্লায়েন্স এবং forensic investigation-এর জন্য অপরিহার্য, বিশেষত
+          accounting ERP-তে</td>
+      </tr>
+      <tr>
+        <td>Field-level Encryption (sensitive data at rest)</td>
+        <td>Database breach হলেও সবচেয়ে sensitive ফিল্ড (যেমন bank account info) এখনো এনক্রিপ্টেড থাকবে</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>১৩.৩ — AI-যুগের নতুন কনসার্ন</h2>
+  <div class="box warning">
+    <div class="box-title">⚠️ ২০২৬-স্পেসিফিক ঝুঁকি যা আগে এত গুরুত্বপূর্ণ ছিল না</div>
+    <ul style="margin-bottom:0;">
+      <li><strong>AI-জেনারেটেড ফিশিং</strong> — অত্যন্ত convincing, personalized ফিশিং ইমেইল/মেসেজ এখন সহজে তৈরি হয়,
+        তাই ইউজার-এডুকেশনের পাশাপাশি technical defense (MFA, anomaly-detection) আরও জরুরি</li>
+      <li><strong>LLM-Integrated ফিচারে Prompt Injection</strong> — যদি Pharmaciano-এর AI-forecasting মডিউল কোনো LLM
+        ব্যবহার করে এবং ইউজার-ইনপুট (যেমন purchase note) সরাসরি প্রম্পটে যায়, malicious input দিয়ে মডেলের আউটপুট
+        manipulate করার ঝুঁকি থাকে — ইনপুট sanitization এখানেও জরুরি</li>
+      <li><strong>Automated Credential Stuffing at Scale</strong> — leaked password ডেটাবেস + AI-driven automation দিয়ে
+        আক্রমণের গতি ও স্কেল বহুগুণ বেড়েছে — rate limiting আগের চেয়ে বেশি কঠোর হওয়া দরকার</li>
+      <li><strong>Deepfake-assisted Social Engineering</strong> — voice/video deepfake দিয়ে "admin-কে call করে
+        পাসওয়ার্ড রিসেট করানো"-সদৃশ আক্রমণ বাস্তব ঝুঁকি — process-level সুরক্ষা (যেমন sensitive অপারেশনে multi-person
+        approval) দরকার</li>
+    </ul>
+  </div>
+
+  <h2>১৩.৪ — ২০২৬-এ একটা ERP-এর জন্য নন-নেগোসিয়েবল তালিকা</h2>
+  <div class="verdict-strip">
+    <div class="verdict-card r-good">
+      <div class="v-label">Must #1</div>
+      <div class="v-value">TLS + HSTS</div>
+    </div>
+    <div class="verdict-card r-good">
+      <div class="v-label">Must #2</div>
+      <div class="v-value">MFA (admin)</div>
+    </div>
+    <div class="verdict-card r-good">
+      <div class="v-label">Must #3</div>
+      <div class="v-value">Audit Log</div>
+    </div>
+    <div class="verdict-card r-good">
+      <div class="v-label">Must #4</div>
+      <div class="v-value">Instant Revocation</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 14 ============ -->
+  <h1><span class="section-eyebrow">Section 14 · Reference Table</span>কুকি ও হেডার সেটিংস — সম্পূর্ণ রেফারেন্স টেবিল
+  </h1>
+
+  <p>নিচে অথেন্টিকেশন কুকি ও সিকিউরিটি হেডারের জন্য একটা সম্পূর্ণ রেফারেন্স — কী সেট করতে হবে, কেন, এবং কী মান সাধারণত
+    ব্যবহার করা হয়।</p>
+
+  <h2>১৪.১ — কুকি অ্যাট্রিবিউট</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>অ্যাট্রিবিউট</th>
+          <th>প্রস্তাবিত মান</th>
+          <th>বিবরণ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>HttpOnly</code></td>
+          <td><span class="tag good">true</span></td>
+          <td>JavaScript দিয়ে কুকি পড়া/লেখা সম্পূর্ণ ব্লক করে — XSS-এর মাধ্যমে টোকেন চুরি প্রতিরোধের সবচেয়ে
+            গুরুত্বপূর্ণ একক সেটিং</td>
+        </tr>
+        <tr>
+          <td><code>Secure</code></td>
+          <td><span class="tag good">true</span></td>
+          <td>কুকি শুধুমাত্র HTTPS কানেকশনে পাঠানো হবে, plain HTTP-তে কখনো না — MITM-এর ঝুঁকি কমায়</td>
+        </tr>
+        <tr>
+          <td><code>SameSite</code></td>
+          <td><span class="tag good">Strict</span> (বা ন্যূনতম Lax)</td>
+          <td>ক্রস-সাইট রিকোয়েস্টে কুকি পাঠানো বন্ধ/সীমিত করে — CSRF-এর প্রধান প্রতিরোধক। Strict সবচেয়ে কড়া
+            (third-party লিংক থেকে এলেও কুকি যাবে না); Lax কিছুটা flexible (টপ-লেভেল নেভিগেশনে কুকি যায়)</td>
+        </tr>
+        <tr>
+          <td><code>Domain</code></td>
+          <td>নির্দিষ্ট, যেমন <code>.pharmaciano.com</code></td>
+          <td>কোন ডোমেইন/সাবডোমেইনে কুকি ভ্যালিড তা সীমিত করে — অতিরিক্ত wide scope (যেমন উদ্দেশ্যহীনভাবে পুরো TLD)
+            এড়িয়ে চলা উচিত</td>
+        </tr>
+        <tr>
+          <td><code>Path</code></td>
+          <td><code>/</code> বা নির্দিষ্ট রুট</td>
+          <td>কুকি কোন URL path-এ প্রযোজ্য তা নির্ধারণ করে; refresh token-এর জন্য path সীমিত রাখা (যেমন শুধু
+            <code>/auth/refresh</code>) অতিরিক্ত সতর্কতা হতে পারে
+          </td>
+        </tr>
+        <tr>
+          <td><code>Max-Age</code> / <code>Expires</code></td>
+          <td>Access: ~১৫ মিনিট<br>Refresh: ৭-১৪ দিন</td>
+          <td>কুকির লাইফটাইম — JWT-র নিজের <code>exp</code> claim-এর সাথে সামঞ্জস্যপূর্ণ হওয়া উচিত</td>
+        </tr>
+        <tr>
+          <td><code>__Host-</code> prefix (cookie name prefix)</td>
+          <td>প্রস্তাবিত, যেমন <code>__Host-refreshToken</code></td>
+          <td>ব্রাউজারকে বাধ্য করে যে এই কুকি <code>Secure</code>, <code>Path=/</code>, এবং কোনো <code>Domain</code>
+            অ্যাট্রিবিউট ছাড়া হতে হবে — cookie-injection আক্রমণের বিরুদ্ধে অতিরিক্ত সুরক্ষা স্তর</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>১৪.২ — HTTP সিকিউরিটি হেডার</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>হেডার</th>
+          <th>প্রস্তাবিত মান</th>
+          <th>বিবরণ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Strict-Transport-Security</code></td>
+          <td><code>max-age=31536000; includeSubDomains</code></td>
+          <td>ব্রাউজারকে বাধ্য করে যেন ভবিষ্যতে শুধু HTTPS-এ কানেক্ট করে, এমনকি ইউজার ভুলে <code>http://</code> টাইপ
+            করলেও — Pharmaciano ইতিমধ্যে এটা সঠিকভাবে সেট করেছে</td>
+        </tr>
+        <tr>
+          <td><code>Content-Security-Policy</code></td>
+          <td><code>default-src 'self'; script-src 'self'</code></td>
+          <td>কোন সোর্স থেকে স্ক্রিপ্ট/স্টাইল/ইমেজ লোড হতে পারবে তা নিয়ন্ত্রণ করে — XSS-এর কার্যকারিতা সীমিত করার একটা
+            মূল স্তর</td>
+        </tr>
+        <tr>
+          <td><code>X-Content-Type-Options</code></td>
+          <td><code>nosniff</code></td>
+          <td>ব্রাউজারকে ফাইলের MIME-টাইপ "অনুমান" করতে নিষেধ করে — malicious ফাইলকে script হিসেবে চালানো প্রতিরোধ করে
+          </td>
+        </tr>
+        <tr>
+          <td><code>X-Frame-Options</code></td>
+          <td><code>SAMEORIGIN</code> বা <code>DENY</code></td>
+          <td>আপনার সাইট অন্য ডোমেইনের <code>&lt;iframe&gt;</code>-এ embed হওয়া থেকে আটকায় — clickjacking প্রতিরোধ
+          </td>
+        </tr>
+        <tr>
+          <td><code>Referrer-Policy</code></td>
+          <td><code>no-referrer</code> বা <code>strict-origin-when-cross-origin</code></td>
+          <td>URL-এ থাকা sensitive তথ্য (যেমন query param-এ token) অন্য সাইটে referrer হিসেবে leak হওয়া আটকায়</td>
+        </tr>
+        <tr>
+          <td><code>Access-Control-Allow-Origin</code></td>
+          <td>নির্দিষ্ট origin (কখনো <code>*</code> না, যদি credentials লাগে)</td>
+          <td>CORS — কোন ডোমেইন থেকে ক্রস-অরিজিন রিকোয়েস্ট গ্রহণযোগ্য তা নির্দিষ্ট করে</td>
+        </tr>
+        <tr>
+          <td><code>Access-Control-Allow-Credentials</code></td>
+          <td><code>true</code> (যদি কুকি-ভিত্তিক অথ ব্যবহৃত হয়)</td>
+          <td>ক্রস-অরিজিন রিকোয়েস্টে কুকি পাঠানোর অনুমতি দেয় — সবসময় নির্দিষ্ট origin-এর সাথে পেয়ার করতে হবে,
+            wildcard-এর সাথে না</td>
+        </tr>
+        <tr>
+          <td><code>Permissions-Policy</code></td>
+          <td>প্রয়োজন অনুযায়ী সীমিত, যেমন <code>geolocation=(), camera=()</code></td>
+          <td>ব্রাউজার ফিচার (ক্যামেরা, লোকেশন, মাইক্রোফোন) এক্সেস নিয়ন্ত্রণ করে — ব্যবহার না হলে disable রাখা ভালো
+          </td>
+        </tr>
+        <tr>
+          <td><code>Cross-Origin-Opener-Policy</code></td>
+          <td><code>same-origin</code></td>
+          <td>আপনার পেজ এবং অন্য origin-এর উইন্ডোর মধ্যে JS-level যোগাযোগ আটকায় — cross-origin attack-এর একটা স্তর
+            কমায়</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box safe">
+    <div class="box-title">✅ Pharmaciano-এর বর্তমান হেডার স্কোর</div>
+    <p style="margin-bottom:0;">Section 8.3-এ দেখানো হয়েছে — Pharmaciano-এর response header-এ HSTS, CSP,
+      X-Content-Type-Options, X-Frame-Options, এবং সঠিক CORS configuration ইতিমধ্যে আছে। এটা header-level সিকিউরিটিতে
+      একটা ভালো ভিত্তি দেখায়। মূল উন্নতির জায়গা হলো cookie-ভিত্তিক HttpOnly token storage-এ যাওয়া এবং token lifecycle
+      management (Sections 7, 9) যোগ করা।</p>
+  </div>
+
+  <!-- ============ SECTION 15 ============ -->
+  <h1><span class="section-eyebrow">Section 15 · Decision Framework</span>ডিজাইন-পূর্ব প্রশ্নমালা:
+    Authentication/Authorization বাছাইয়ের ফ্রেমওয়ার্ক</h1>
+
+  <p>যেকোনো সিস্টেম ডিজাইনের আগে নিচের প্রশ্নগুলো ধারাবাহিকভাবে নিজেকে করা উচিত — উত্তরগুলোই নির্ধারণ করবে কোন পদ্ধতি
+    (Session/JWT/Hybrid), কোন TTL, কতটা revocation-complexity প্রয়োজন।</p>
+
+  <div class="qcard">
+    <span class="qnum">১</span><span class="qtext">এই সিস্টেমে কম্প্রোমাইজ হলে সর্বোচ্চ কতটা আর্থিক/অপারেশনাল ক্ষতি হতে
+      পারে?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর (Pharmaciano):</strong> উচ্চ — ইনভেন্টরি ম্যানিপুলেশন, ভুয়া sales/purchase
+      entry, ফাইন্যান্সিয়াল রেকর্ড টেম্পারিং সম্ভব। এটা উচ্চ-নিরাপত্তা ডিজাইনের দিকে নির্দেশ করে (instant revocation
+      আবশ্যক)।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">২</span><span class="qtext">কতজন কনকারেন্ট ইউজার এবং কত সার্ভার ইনস্ট্যান্স আশা করা হচ্ছে (এখন
+      এবং ভবিষ্যতে)?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> এখন single server, কিন্তু multi-organization গ্রোথ মডেল বোঝায়
+      ভবিষ্যতে horizontal scaling লাগতে পারে। তাই এমন ডিজাইন বাছা উচিত যা সহজে scale করে (JWT + Redis hybrid horizontal
+      scaling-friendly, pure DB session ততটা না)।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৩</span><span class="qtext">ইউজারের role/permission কতটা ঘনঘন পরিবর্তিত হয়?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> মাঝারি-ঘন — প্রমোশন, ডিমোশন, branch transfer ঘটতেই পারে। তাই
+      role-কে JWT-তে স্ট্যাটিকভাবে এনকোড না করে fresh lookup (Redis cache) করা উচিত (Section 6)।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৪</span><span class="qtext">কোন কোন রেগুলেটরি/কম্প্লায়েন্স প্রয়োজনীয়তা প্রযোজ্য? (ডেটা
+      প্রাইভেসি, আর্থিক রেকর্ড-কিপিং)</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> ফার্মেসি/রিটেইল ডেটা, আর্থিক হিসাব — স্থানীয় ডেটা-সুরক্ষা আইন এবং
+      সম্ভবত financial record-retention নিয়ম প্রযোজ্য হতে পারে। এটা audit-logging এবং data-encryption-কে নন-নেগোসিয়েবল
+      করে তোলে।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৫</span><span class="qtext">ক্লায়েন্ট কী (ব্রাউজার SPA, মোবাইল অ্যাপ, সার্ভার-সাইড-রেন্ডার্ড
+      পেজ)?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> মূলত ব্রাউজার-ভিত্তিক (POS UI), সম্ভবত ভবিষ্যতে মোবাইল অ্যাপ। এটা
+      cookie-based JWT-কে ব্যবহারিক করে তোলে ব্রাউজারের জন্য, কিন্তু মোবাইল অ্যাপের জন্য টোকেন আলাদাভাবে secure storage
+      (Keychain/Keystore)-এ রাখতে হবে — দুই ক্লায়েন্ট-টাইপের জন্য token-delivery মেকানিজম ভিন্ন হতে পারে।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৬</span><span class="qtext">"Logout এখনই কার্যকর হতে হবে" — এই প্রত্যাশা কি ব্যবসায়িকভাবে
+      গুরুত্বপূর্ণ?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> হ্যাঁ, কর্মচারী ছাঁটাই, শেয়ার্ড POS টার্মিনাল শিফট পরিবর্তন — উভয়
+      কারণেই তাৎক্ষণিক revocation প্রয়োজনীয়।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৭</span><span class="qtext">ইতিমধ্যে কী ইনফ্রাস্ট্রাকচার আছে (Redis, ডেটাবেস
+      ক্যাপাবিলিটি)?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> Redis ইতিমধ্যে আছে — এটা revocation/permission-cache
+      ইমপ্লিমেন্টেশনের খরচ অনেক কমিয়ে দেয়, যেহেতু নতুন কোনো ইনফ্রাস্ট্রাকচার যোগ করতে হচ্ছে না।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৮</span><span class="qtext">মাল্টি-টেনেন্সি আছে কিনা — থাকলে ডেটা আইসোলেশন কতটা কঠোর হতে
+      হবে?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> হ্যাঁ, multi-organization, multi-branch — কঠোর আইসোলেশন প্রয়োজন।
+      এটা PBAC/ABAC-এর প্রয়োজনীয়তা নির্দেশ করে, শুধু RBAC যথেষ্ট না (Section 12.5)।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">৯</span><span class="qtext">কোন রোলগুলো "উচ্চ-প্রিভিলেজ" এবং সেগুলোর জন্য অতিরিক্ত সুরক্ষা স্তর
+      (MFA) কি দরকার?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> Super Admin, Accountant (debit-credit access) — এই দুই role-এর জন্য
+      MFA বাধ্যতামূলক করা উচিত (Section 12.3)।</div>
+  </div>
+
+  <div class="qcard">
+    <span class="qnum">১০</span><span class="qtext">UX-এ লগইন-ফ্রিকোয়েন্সি কতটা গ্রহণযোগ্য?</span>
+    <div class="qans"><strong>উদাহরণ উত্তর:</strong> POS টার্মিনালে স্টাফ বারবার লগইন করতে চাইবে না — দীর্ঘ-মেয়াদী
+      refresh token + silent-refresh এটার সমাধান, পাশাপাশি shift-change-এর জন্য "Quick Switch User" ফিচার (Section
+      10.6)।</div>
+  </div>
+
 </body>
 
 </html>
